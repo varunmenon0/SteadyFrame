@@ -1,0 +1,21 @@
+{
+  "frames": 120,
+  "fps": 120.0,
+  "width": 1920,
+  "height": 1080,
+  "tracking_failures": 0,
+  "seconds": 4.137,
+  "processing_fps": 29.0,
+  "max_feature_points": 500,
+  "adaptive_crop": true,
+  "mean_crop_zoom": 1.05,
+  "max_crop_zoom": 1.05,
+  "audio_preserved": false,
+  "evaluation": "synthetic translation shake with constant pan; seed=2026",
+  "metric": "RMS inter-frame displacement change (pixels/frame^2), phase correlation",
+  "input_jitter": 16.248842515558508,
+  "output_jitter": 1.7569545638721913,
+  "jitter_reduction_percent": 89.18720172104639,
+  "real_time_120fps_verified": false,
+  "limitations": "Synthetic translation only; excludes rotation, parallax, scene cuts, audio and real-world quality."
+}
