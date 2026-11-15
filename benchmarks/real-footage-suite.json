@@ -1,0 +1,163 @@
+{
+  "revision": "6d29b12f196d2fffa30a07a4339e9228589d2ec0",
+  "settings": {
+    "strength": "Balanced",
+    "smoothing_radius_seconds": 0.5,
+    "minimum_zoom": 1.05,
+    "maximum_zoom": 1.25
+  },
+  "selection": "The fox clip was selected for the public demo because it had the strongest scored result in this additional test set, low crop magnification, and CC0 availability. All tested clips are included below.",
+  "clips": {
+    "fox": {
+      "input": {
+        "width": 1280,
+        "height": 720,
+        "fps": 59.94006309148265,
+        "frames": 1199,
+        "duration": 20.003315614967633
+      },
+      "pipeline": {
+        "frames": 1199,
+        "fps": 59.94006309148265,
+        "width": 1280,
+        "height": 720,
+        "tracking_failures": 0,
+        "seconds": 16.606,
+        "processing_fps": 72.2,
+        "max_feature_points": 500,
+        "adaptive_crop": true,
+        "scene_cuts": 0,
+        "scene_cut_frames": [],
+        "mean_crop_zoom": 1.0527,
+        "max_crop_zoom": 1.0984,
+        "crop_zoom_limit": 1.25,
+        "crop_limited_frames": 0,
+        "minimum_correction_strength": 1.0,
+        "max_crop_zoom_step": 0.002502,
+        "audio_preserved": false
+      },
+      "evaluation": {
+        "method": "ORB descriptor matches and RANSAC similarity transforms; RMS change in frame-center displacement and rotation (pixel-equivalent).",
+        "evaluated_triplets": 1195,
+        "total_triplets": 1197,
+        "shared_triplet_coverage": 0.9983291562238931,
+        "note": "Same reliable frame triplets for all clips. Estimated global image motion, not ground truth or a perceptual quality score.",
+        "clips": {
+          "fox-input.mp4": {
+            "motion_jitter_rms": 1.2102564907043025,
+            "zoom_acceleration_rms": 0.0005974491532989284,
+            "median_inliers": 1212.0
+          },
+          "fox-balanced.mp4": {
+            "motion_jitter_rms": 0.284947753094295,
+            "zoom_acceleration_rms": 0.000713606591136616,
+            "median_inliers": 1224.0,
+            "estimated_jitter_reduction_percent": 76.4555897627559
+          }
+        }
+      },
+      "preprocessing": "First 20 seconds, resized to 1280-pixel width, H.264 CRF 18; original camera motion retained; audio omitted.",
+      "source": {
+        "page": "https://commons.wikimedia.org/wiki/File:Red_fox_playing_with_prey_in_yard,_Charlton_MA_2025-12-26.webm",
+        "author": "Peter Cooper Jr.",
+        "license": "CC0 1.0",
+        "sha256": "0b5c5ab2e2c481e2fce33ff752c3ed24b03dc10e9a407dd68f3c5874ae0ccf30"
+      }
+    },
+    "riverside": {
+      "input": {
+        "width": 1080,
+        "height": 1920,
+        "fps": 30.0,
+        "frames": 600,
+        "duration": 20.0
+      },
+      "pipeline": {
+        "frames": 600,
+        "fps": 30.0,
+        "width": 1080,
+        "height": 1920,
+        "tracking_failures": 0,
+        "seconds": 25.453,
+        "processing_fps": 23.57,
+        "max_feature_points": 500,
+        "adaptive_crop": true,
+        "scene_cuts": 0,
+        "scene_cut_frames": [],
+        "mean_crop_zoom": 1.1315,
+        "max_crop_zoom": 1.25,
+        "crop_zoom_limit": 1.25,
+        "crop_limited_frames": 209,
+        "minimum_correction_strength": 0.1055,
+        "max_crop_zoom_step": 0.005,
+        "audio_preserved": false
+      },
+      "evaluation": {
+        "unscored_reason": "Reliable shared triplets cover 35.3%; no score reported"
+      },
+      "preprocessing": "First 20 seconds, width capped at 1280 pixels without upscaling; H.264 CRF 18; original camera motion retained; audio omitted.",
+      "source": {
+        "page": "https://commons.wikimedia.org/wiki/File:Walking_along_a_rural_riverside_path_in_Japan_June2025.webm",
+        "author": "Shironsilentpond",
+        "license": "CC BY 4.0",
+        "sha256": "9fa5466ab57a5ef4868f3ac70b3bd2a3d03d1db2ce03bdf0eff15b1c8a0d6d5d"
+      }
+    },
+    "dusk": {
+      "input": {
+        "width": 1280,
+        "height": 604,
+        "fps": 30.0,
+        "frames": 600,
+        "duration": 20.0
+      },
+      "pipeline": {
+        "frames": 600,
+        "fps": 30.0,
+        "width": 1280,
+        "height": 604,
+        "tracking_failures": 0,
+        "seconds": 9.555,
+        "processing_fps": 62.8,
+        "max_feature_points": 500,
+        "adaptive_crop": true,
+        "scene_cuts": 0,
+        "scene_cut_frames": [],
+        "mean_crop_zoom": 1.0552,
+        "max_crop_zoom": 1.1206,
+        "crop_zoom_limit": 1.25,
+        "crop_limited_frames": 0,
+        "minimum_correction_strength": 1.0,
+        "max_crop_zoom_step": 0.005,
+        "audio_preserved": false
+      },
+      "evaluation": {
+        "method": "ORB descriptor matches and RANSAC similarity transforms; RMS change in frame-center displacement and rotation (pixel-equivalent).",
+        "evaluated_triplets": 596,
+        "total_triplets": 598,
+        "shared_triplet_coverage": 0.9966555183946488,
+        "note": "Same reliable frame triplets for all clips. Estimated global image motion, not ground truth or a perceptual quality score.",
+        "clips": {
+          "dusk-input.mp4": {
+            "motion_jitter_rms": 2.5095490095765554,
+            "zoom_acceleration_rms": 0.0021536503810385232,
+            "median_inliers": 939.0
+          },
+          "dusk-balanced.mp4": {
+            "motion_jitter_rms": 1.1840016801425408,
+            "zoom_acceleration_rms": 0.002491421542533964,
+            "median_inliers": 982.0,
+            "estimated_jitter_reduction_percent": 52.820141163837185
+          }
+        }
+      },
+      "preprocessing": "First 20 seconds, width capped at 1280 pixels without upscaling; H.264 CRF 18; original camera motion retained; audio omitted.",
+      "source": {
+        "page": "https://commons.wikimedia.org/wiki/File:Trail_walking_at_dusk.webm",
+        "author": "Andrew Keith",
+        "license": "CC BY-SA 4.0",
+        "sha256": "40b35e1d6b49f32803d3dc7cfae4c42a1621a8c20c6c19cb9e11d921d688bcd7"
+      }
+    }
+  }
+}
