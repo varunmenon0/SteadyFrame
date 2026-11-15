@@ -1,0 +1,98 @@
+{
+  "method": "ORB descriptor matches and RANSAC similarity transforms; RMS change in frame-center displacement and rotation (pixel-equivalent).",
+  "evaluated_triplets": 271,
+  "total_triplets": 310,
+  "shared_triplet_coverage": 0.8741935483870967,
+  "note": "Same reliable frame triplets for all clips. Estimated global image motion, not ground truth or a perceptual quality score.",
+  "clips": {
+    "ostrich-source.mp4": {
+      "motion_jitter_rms": 6.035838333970107,
+      "zoom_acceleration_rms": 0.0057443007451984905,
+      "median_inliers": 1073.0
+    },
+    "ostrich-stabilized.mp4": {
+      "motion_jitter_rms": 5.732930588766885,
+      "zoom_acceleration_rms": 0.005905879686910978,
+      "median_inliers": 978.0,
+      "estimated_jitter_reduction_percent": 5.01848671954046
+    },
+    "ostrich-gentle.mp4": {
+      "motion_jitter_rms": 5.430098837993224,
+      "zoom_acceleration_rms": 0.005824196288449571,
+      "median_inliers": 1057.0,
+      "estimated_jitter_reduction_percent": 10.035714385651119
+    },
+    "bounded-balanced.mp4": {
+      "motion_jitter_rms": 1.9397965417392353,
+      "zoom_acceleration_rms": 0.0064594011736987585,
+      "median_inliers": 1058.0,
+      "estimated_jitter_reduction_percent": 67.86201958356092
+    },
+    "bounded-gentle.mp4": {
+      "motion_jitter_rms": 2.763240903108334,
+      "zoom_acceleration_rms": 0.0057691410543566244,
+      "median_inliers": 1069.0,
+      "estimated_jitter_reduction_percent": 54.21943481228404
+    }
+  },
+  "source": {
+    "url": "https://s3.amazonaws.com/python-vidstab/ostrich.mp4",
+    "documentation": "https://adamspannbauer.github.io/python_video_stab/html/module_docs.html",
+    "sha256": "155597da801355e2f8807302f5830a0684eca40a1761a5dedbec02487a0ac67e",
+    "frames": 312,
+    "width": 876,
+    "height": 446,
+    "fps": 14.952076677316294
+  },
+  "baseline_revision": "18a9290",
+  "updated_revision": "d741f424e43ec93a8c88b00d2e17444f8925dcbd",
+  "settings": {
+    "balanced_radius": 7,
+    "gentle_radius": 3,
+    "minimum_zoom": 1.05,
+    "updated_maximum_zoom": 1.25
+  },
+  "balanced_before": {
+    "frames": 312,
+    "fps": 14.952076677316294,
+    "width": 876,
+    "height": 446,
+    "tracking_failures": 0,
+    "seconds": 4.116,
+    "processing_fps": 75.79,
+    "max_feature_points": 500,
+    "adaptive_crop": true,
+    "scene_cuts": 0,
+    "scene_cut_frames": [],
+    "mean_crop_zoom": 1.4183,
+    "max_crop_zoom": 1.9797,
+    "max_crop_zoom_step": 0.010032,
+    "audio_preserved": false,
+    "source_url": "https://s3.amazonaws.com/python-vidstab/ostrich.mp4",
+    "settings": {
+      "strength": "Balanced",
+      "radius": 7,
+      "minimum_zoom": 1.05
+    }
+  },
+  "balanced_after": {
+    "frames": 312,
+    "fps": 14.952076677316294,
+    "width": 876,
+    "height": 446,
+    "tracking_failures": 0,
+    "seconds": 2.878,
+    "processing_fps": 108.4,
+    "max_feature_points": 500,
+    "adaptive_crop": true,
+    "scene_cuts": 0,
+    "scene_cut_frames": [],
+    "mean_crop_zoom": 1.0875,
+    "max_crop_zoom": 1.25,
+    "crop_zoom_limit": 1.25,
+    "crop_limited_frames": 69,
+    "minimum_correction_strength": 0.4009,
+    "max_crop_zoom_step": 0.010032,
+    "audio_preserved": false
+  }
+}

@@ -75,7 +75,17 @@ PYTHONPATH=src .venv/bin/python tools/benchmark.py
 
 The benchmark generates a seeded 1920×1080 video at 120 FPS with translation shake and a constant pan. It measures translational jitter independently using phase correlation and RMS changes in frame displacement. Generated videos and a JSON report are saved to `outputs/benchmark/`.
 
-The latest recorded synthetic translation benchmark reduced jitter by 97.28% with zero tracking failures, using 1080p footage at 120 FPS. Measured processing throughput was 27.41 FPS on arm64 with Python 3.12.10, OpenCV 5.0.0, and NumPy 2.5.4. Full results are in `benchmarks/synthetic-1080p120.json`. The rotation-containing visual demo above uses a separate fixture.
+The latest recorded synthetic translation benchmark reduced jitter by 97.30% with zero tracking failures, using 1080p footage at 120 FPS. Measured processing throughput was 25.17 FPS on arm64 with Python 3.12.10, OpenCV 5.0.0, and NumPy 2.5.4. Full results are in `benchmarks/synthetic-1080p120.json`. The rotation-containing visual demo above uses a separate fixture.
+
+On the published [VidStab ostrich sample](https://adamspannbauer.github.io/python_video_stab/html/module_docs.html), Balanced mode reduced estimated global motion jitter by 67.86% with a maximum crop zoom of 1.25×. The same clip previously measured 5.02% reduction and 1.98× peak zoom. This comparison uses the same 271 reliable frame triplets (87.4% coverage) across all versions, measured with independent ORB feature matching. Source identity, settings, revisions, and results are recorded in `benchmarks/real-footage-ostrich.json`; the third-party footage is not bundled.
+
+Compare an original clip and one or more stabilized versions using shared reliable frame triplets:
+
+```sh
+python tools/evaluate_motion.py original.mp4 stabilized.mp4 --report outputs/motion-report.json
+```
+
+Clips must have matching frame counts, dimensions, and frame rates. The evaluator reports global image-motion estimates, including rotation, and refuses a score if shared tracking coverage is below 80%. It uses a different metric from the synthetic translation benchmark above.
 
 Regenerate the visual demo, comparison video, and GIF preview:
 
