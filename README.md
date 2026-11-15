@@ -2,6 +2,10 @@
 
 Offline video stabilization built with Python, OpenCV, and NumPy.
 
+![Synthetic camera shake compared with stabilized output](docs/demo.gif)
+
+This reproducible synthetic demo combines translation and rotation shake with a slow intended pan. Original footage is on the left; stabilized output is on the right. It is not a real-footage evaluation.
+
 The pipeline detects up to 500 corners per frame, tracks them with Lucas–Kanade optical flow, rejects outliers with RANSAC, and estimates camera translation and rotation. It smooths the reconstructed camera path and applies compensating transforms. Adaptive cropping and geometric recentering conceal exposed borders.
 
 ## Setup
@@ -43,7 +47,13 @@ PYTHONPATH=src .venv/bin/python tools/benchmark.py
 
 The benchmark generates a seeded 1920×1080 video at 120 FPS with translation shake and a constant pan. It measures translational jitter independently using phase correlation and RMS changes in frame displacement. Generated videos and a JSON report are saved to `outputs/benchmark/`.
 
-The recorded synthetic run reduced jitter by 89.19% and processed 29.0 frames per second with zero tracking failures. The environment was arm64, Python 3.12.10, OpenCV 5.0.0, and NumPy 2.5.4. Full results are in `benchmarks/synthetic-1080p120.json`. Input frame rate and processing throughput are separate measurements; these results do not establish real-time 120 FPS processing or performance on real footage.
+The latest recorded synthetic translation benchmark reduced jitter by 97.28% and processed 27.41 frames per second with zero tracking failures. The environment was arm64, Python 3.12.10, OpenCV 5.0.0, and NumPy 2.5.4. Full results are in `benchmarks/synthetic-1080p120.json`. Input frame rate and processing throughput are separate measurements; these results do not establish real-time 120 FPS processing or performance on real footage. The rotation-containing visual demo above is a separate fixture and is not the source of this metric.
+
+Regenerate the visual demo, comparison video, and GIF preview:
+
+```sh
+PYTHONPATH=src .venv/bin/python tools/demo.py
+```
 
 ## Limitations
 
