@@ -162,8 +162,13 @@ with workspace:
         st.caption("Previews play independently. Downloads include browser-compatible video and any retained audio.")
     elif not submitted:
         st.caption("Add a video to compare the original and stabilized versions here.")
-        sample = Path(__file__).resolve().parents[2] / "docs" / "demo.gif"
-        if sample.is_file():
+        media = Path(__file__).resolve().parents[2] / "docs"
+        real_sample = media / "real-demo.mp4"
+        sample = media / "demo.gif"
+        if real_sample.is_file():
+            st.video(str(real_sample))
+            st.caption("Real handheld example: original left, SteadyFrame right. Footage: Peter Cooper Jr., CC0. Balanced settings; no added shake.")
+        elif sample.is_file():
             st.image(str(sample), caption="Example: synthetic shake. Original on the left, stabilized on the right.")
 
 st.divider()

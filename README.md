@@ -4,9 +4,9 @@
 
 Offline video stabilization built with Python, OpenCV, and NumPy.
 
-![Synthetic camera shake compared with stabilized output](docs/demo.gif)
+![Real handheld footage compared with SteadyFrame output](docs/real-demo.gif)
 
-This reproducible synthetic demo combines translation and rotation shake with a slow intended pan. Original footage is on the left; stabilized output is on the right. It is not a real-footage evaluation.
+Real handheld footage, with the original on the left and SteadyFrame Balanced output on the right. This is an eight-second preview of the 20-second evaluated clip; no camera shake was added. [Watch the full comparison](docs/real-demo.mp4) · [Footage credit and processing details](docs/MEDIA.md).
 
 The pipeline detects up to 500 corners per frame, tracks them with Lucas–Kanade optical flow, rejects outliers with RANSAC, and estimates camera translation, rotation, and zoom. It smooths the reconstructed camera path and applies compensating transforms. Adaptive cropping and geometric recentering conceal exposed borders.
 
@@ -75,7 +75,7 @@ PYTHONPATH=src .venv/bin/python tools/benchmark.py
 
 The benchmark generates a seeded 1920×1080 video at 120 FPS with translation shake and a constant pan. It measures translational jitter independently using phase correlation and RMS changes in frame displacement. Generated videos and a JSON report are saved to `outputs/benchmark/`.
 
-The latest recorded synthetic translation benchmark reduced jitter by 97.30% with zero tracking failures, using 1080p footage at 120 FPS. Measured processing throughput was 25.17 FPS on arm64 with Python 3.12.10, OpenCV 5.0.0, and NumPy 2.5.4. Full results are in `benchmarks/synthetic-1080p120.json`. The rotation-containing visual demo above uses a separate fixture.
+The latest recorded synthetic translation benchmark reduced jitter by 97.30% with zero tracking failures, using 1080p footage at 120 FPS. Measured processing throughput was 25.17 FPS on arm64 with Python 3.12.10, OpenCV 5.0.0, and NumPy 2.5.4. Full results are in `benchmarks/synthetic-1080p120.json`; this generated fixture is separate from the real demo above.
 
 On the published [VidStab ostrich sample](https://adamspannbauer.github.io/python_video_stab/html/module_docs.html), Balanced mode reduced estimated global motion jitter by 67.86% with a maximum crop zoom of 1.25×. The same clip previously measured 5.02% reduction and 1.98× peak zoom. This comparison uses the same 271 reliable frame triplets (87.4% coverage) across all versions, measured with independent ORB feature matching. Source identity, settings, revisions, and results are recorded in `benchmarks/real-footage-ostrich.json`; the third-party footage is not bundled.
 
@@ -87,9 +87,29 @@ python tools/evaluate_motion.py original.mp4 stabilized.mp4 --report outputs/mot
 
 Clips must have matching frame counts, dimensions, and frame rates. The evaluator reports global image-motion estimates, including rotation, and refuses a score if shared tracking coverage is below 80%. It uses a different metric from the synthetic translation benchmark above.
 
+Three additional real-footage tests used the first 20 seconds of each recording, Balanced settings, and the same 1.25× crop ceiling:
+
+| Clip | Estimated jitter reduction | Peak crop zoom | Shared tracking coverage |
+| --- | ---: | ---: | ---: |
+| Handheld fox recording — shown in demo | 76.46% | 1.10× | 99.8% |
+| Trail walking at dusk | 52.82% | 1.12× | 99.7% |
+| Portrait riverside walk | Not scored | 1.25× | 35.3% |
+
+The riverside clip exported but did not meet the evaluator's coverage threshold. Source links, attribution, hashes, preprocessing, and per-clip reports are in `benchmarks/real-footage-suite.json`. The real demo uses the strongest scored clip from this set, not an aggregate result.
+
+Build a labeled comparison from matched original and stabilized clips:
+
+```sh
+python tools/make_comparison.py original.mp4 stabilized.mp4 --credit 'Footage: author / license'
+```
+
+For the bundled real demo, use the fox inputs described in the suite report. It writes the full comparison MP4 and an eight-second GIF preview. See [media credits](docs/MEDIA.md) for the source and modifications.
+
 Regenerate the visual demo, comparison video, and GIF preview:
 
 ```sh
 PYTHONPATH=src .venv/bin/python tools/demo.py
 ```
+
+This last command regenerates the separate [synthetic demo](docs/demo.gif).
 
