@@ -27,6 +27,8 @@ def test_upload_process_download_and_replace_input(tmp_path):
     assert not app.exception
     assert app.title[0].value == "SteadyFrame"
     assert any("Real handheld example" in caption.value for caption in app.caption)
+    assert [tab.label for tab in app.tabs] == ["Real footage", "Synthetic benchmark"]
+    assert any("97.30% measured jitter reduction" in caption.value for caption in app.caption)
     assert app.button[0].disabled
     data = clip(tmp_path / "source.mp4")
     app.file_uploader[0].set_value(("holiday.mp4", data, "video/mp4")).run()

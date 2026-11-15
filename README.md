@@ -8,6 +8,12 @@ Offline video stabilization built with Python, OpenCV, and NumPy.
 
 Real handheld footage, with the original on the left and SteadyFrame Balanced output on the right. This is an eight-second preview of the 20-second evaluated clip; no camera shake was added. [Watch the full comparison](docs/real-demo.mp4) · [Footage credit and processing details](docs/MEDIA.md).
 
+### Synthetic benchmark — 97.30% measured jitter reduction
+
+![Exact synthetic benchmark frames before and after stabilization](docs/synthetic-benchmark.gif)
+
+This comparison uses the exact 120 frames evaluated by the seeded 1080p / 120 FPS translation benchmark. Playback is slowed 4× for inspection; the full MP4 retains every evaluated frame. [Watch the benchmark comparison](docs/synthetic-benchmark.mp4) · [Measured results](benchmarks/synthetic-1080p120.json) · [Demo provenance](docs/synthetic-benchmark.json). The 97.30% result belongs to this controlled synthetic test; the real-footage results are reported separately below.
+
 The pipeline detects up to 500 corners per frame, tracks them with Lucas–Kanade optical flow, rejects outliers with RANSAC, and estimates camera translation, rotation, and zoom. It smooths the reconstructed camera path and applies compensating transforms. Adaptive cropping and geometric recentering conceal exposed borders.
 
 ## Browser app
@@ -17,6 +23,8 @@ The pipeline detects up to 500 corners per frame, tracks them with Lucas–Kanad
 On a Mac, double-click **Open SteadyFrame.command** in the project folder. The launcher opens a local browser interface. First-time setup requires Python 3.10 or newer and an internet connection to install dependencies. Keep the launcher's window open while using the app; closing it stops the local server.
 
 Upload a clip, choose Gentle, Balanced, or Strong smoothing, then click **Stabilize video**. The interface shows progress, original and stabilized previews, and downloads for the result and optional side-by-side video. Audio is retained by default. Previews play independently.
+
+Before uploading, use the **Real footage** and **Synthetic benchmark** tabs to view both example comparisons.
 
 Maximum zoom defaults to 1.25×. When a full correction would require more cropping, the app gradually eases stabilization to preserve framing. Increase the limit to allow a tighter crop, or lower it to retain more of the scene.
 
@@ -75,7 +83,7 @@ PYTHONPATH=src .venv/bin/python tools/benchmark.py
 
 The benchmark generates a seeded 1920×1080 video at 120 FPS with translation shake and a constant pan. It measures translational jitter independently using phase correlation and RMS changes in frame displacement. Generated videos and a JSON report are saved to `outputs/benchmark/`.
 
-The latest recorded synthetic translation benchmark reduced jitter by 97.30% with zero tracking failures, using 1080p footage at 120 FPS. Measured processing throughput was 25.17 FPS on arm64 with Python 3.12.10, OpenCV 5.0.0, and NumPy 2.5.4. Full results are in `benchmarks/synthetic-1080p120.json`; this generated fixture is separate from the real demo above.
+The latest recorded synthetic translation benchmark reduced jitter by 97.30% with zero tracking failures, using 1080p footage at 120 FPS. Measured processing throughput was 28.75 FPS on arm64 with Python 3.12.10, OpenCV 5.0.0, and NumPy 2.5.4. Full results are in `benchmarks/synthetic-1080p120.json`; this generated fixture is separate from the real demo above.
 
 On the published [VidStab ostrich sample](https://adamspannbauer.github.io/python_video_stab/html/module_docs.html), Balanced mode reduced estimated global motion jitter by 67.86% with a maximum crop zoom of 1.25×. The same clip previously measured 5.02% reduction and 1.98× peak zoom. This comparison uses the same 271 reliable frame triplets (87.4% coverage) across all versions, measured with independent ORB feature matching. Source identity, settings, revisions, and results are recorded in `benchmarks/real-footage-ostrich.json`; the third-party footage is not bundled.
 

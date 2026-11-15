@@ -1,0 +1,22 @@
+{
+  "frames": 120,
+  "fps": 120.0,
+  "width": 1920,
+  "height": 1080,
+  "evaluation": "synthetic translation shake with constant pan; seed=2026",
+  "settings": {
+    "radius": 15,
+    "minimum_zoom": 1.05,
+    "maximum_zoom": 1.25
+  },
+  "metric": "RMS inter-frame displacement change (pixels/frame^2), phase correlation",
+  "input_jitter": 16.248842515558508,
+  "output_jitter": 0.4383080959957674,
+  "jitter_reduction_percent": 97.30252726878189,
+  "source_sha256": "22364c09e588bcbccac038f1ed3abfe1b658cbe11c463d43ccb7930b0cb01a11",
+  "output_sha256": "b15fbf245ab2d88939e193c103fbf9facaa46231cd0446c4d16af105ef377152",
+  "playback_speed": 0.25,
+  "playback_fps": 30.0,
+  "comparison_sha256": "f81b4a868988f63aba458b27b51a62b341a018f94c3dca794e632c6f54fd50e8",
+  "preview_sha256": "05bc8b616d3db06e3452d2301708c851c680392194c2dfe443badd113c761996"
+}

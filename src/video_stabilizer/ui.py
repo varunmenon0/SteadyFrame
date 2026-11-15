@@ -1,5 +1,6 @@
 """SteadyFrame local browser interface. Run with steadyframe-ui."""
 import hashlib
+import json
 import logging
 from pathlib import Path
 import tempfile
@@ -164,10 +165,19 @@ with workspace:
         st.caption("Add a video to compare the original and stabilized versions here.")
         media = Path(__file__).resolve().parents[2] / "docs"
         real_sample = media / "real-demo.mp4"
+        benchmark_sample = media / "synthetic-benchmark.mp4"
         sample = media / "demo.gif"
-        if real_sample.is_file():
-            st.video(str(real_sample))
-            st.caption("Real handheld example: original left, SteadyFrame right. Footage: Peter Cooper Jr., CC0. Balanced settings; no added shake.")
+        if real_sample.is_file() or benchmark_sample.is_file():
+            real_tab, benchmark_tab = st.tabs(["Real footage", "Synthetic benchmark"])
+            with real_tab:
+                if real_sample.is_file():
+                    st.video(str(real_sample))
+                    st.caption("Real handheld example: original left, SteadyFrame right. Footage: Peter Cooper Jr., CC0. Balanced settings; no added shake.")
+            with benchmark_tab:
+                if benchmark_sample.is_file():
+                    st.video(str(benchmark_sample))
+                    benchmark = json.loads((media / "synthetic-benchmark.json").read_text())
+                    st.caption(f'Synthetic benchmark: {benchmark["jitter_reduction_percent"]:.2f}% measured jitter reduction. Exact evaluated frames from 1080p / 120 FPS input, shown at 4× slow motion. Original left, stabilized right.')
         elif sample.is_file():
             st.image(str(sample), caption="Example: synthetic shake. Original on the left, stabilized on the right.")
 
