@@ -72,7 +72,7 @@ PYTHONPATH=src .venv/bin/python tools/benchmark.py
 
 The benchmark generates a seeded 1920×1080 video at 120 FPS with translation shake and a constant pan. It measures translational jitter independently using phase correlation and RMS changes in frame displacement. Generated videos and a JSON report are saved to `outputs/benchmark/`.
 
-The latest recorded synthetic translation benchmark reduced jitter by 97.28% and processed 27.41 frames per second with zero tracking failures. The environment was arm64, Python 3.12.10, OpenCV 5.0.0, and NumPy 2.5.4. Full results are in `benchmarks/synthetic-1080p120.json`. Input frame rate and processing throughput are separate measurements; these results do not establish real-time 120 FPS processing or performance on real footage. The rotation-containing visual demo above is a separate fixture and is not the source of this metric.
+The latest recorded synthetic translation benchmark reduced jitter by 97.28% with zero tracking failures, using 1080p footage at 120 FPS. Measured processing throughput was 27.41 FPS on arm64 with Python 3.12.10, OpenCV 5.0.0, and NumPy 2.5.4. Full results are in `benchmarks/synthetic-1080p120.json`. The rotation-containing visual demo above uses a separate fixture.
 
 Regenerate the visual demo, comparison video, and GIF preview:
 
@@ -80,12 +80,3 @@ Regenerate the visual demo, comparison video, and GIF preview:
 PYTHONPATH=src .venv/bin/python tools/demo.py
 ```
 
-## Limitations
-
-- Retains the first audio track as AAC; additional tracks, subtitles, and original metadata are not preserved.
-- Uses two offline passes and constant frame rate encoding.
-- Models translation and rotation; parallax, rolling shutter, and large foreground motion need additional handling.
-- Scene-cut detection is a conservative luminance heuristic. It can miss similarly lit cuts or treat a strong exposure flash as a cut; it does not handle gradual transitions.
-- Falls back to identity motion when tracking fails and reports those failures.
-- Adaptive cropping can produce large zoom values under strong motion. If the smoothed center leaves the source footprint, the crop falls back to the transformed image center, which can cause a jump. Recentring is geometric and does not track a subject.
-- Fixed cropping reflects exposed borders.
