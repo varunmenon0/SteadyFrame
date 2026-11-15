@@ -8,7 +8,7 @@ Offline video stabilization built with Python, OpenCV, and NumPy.
 
 This reproducible synthetic demo combines translation and rotation shake with a slow intended pan. Original footage is on the left; stabilized output is on the right. It is not a real-footage evaluation.
 
-The pipeline detects up to 500 corners per frame, tracks them with Lucas–Kanade optical flow, rejects outliers with RANSAC, and estimates camera translation and rotation. It smooths the reconstructed camera path and applies compensating transforms. Adaptive cropping and geometric recentering conceal exposed borders.
+The pipeline detects up to 500 corners per frame, tracks them with Lucas–Kanade optical flow, rejects outliers with RANSAC, and estimates camera translation, rotation, and zoom. It smooths the reconstructed camera path and applies compensating transforms. Adaptive cropping and geometric recentering conceal exposed borders.
 
 ## Browser app
 
@@ -17,6 +17,8 @@ The pipeline detects up to 500 corners per frame, tracks them with Lucas–Kanad
 On a Mac, double-click **Open SteadyFrame.command** in the project folder. The launcher opens a local browser interface. First-time setup requires Python 3.10 or newer and an internet connection to install dependencies. Keep the launcher's window open while using the app; closing it stops the local server.
 
 Upload a clip, choose Gentle, Balanced, or Strong smoothing, then click **Stabilize video**. The interface shows progress, original and stabilized previews, and downloads for the result and optional side-by-side video. Audio is retained by default. Previews play independently.
+
+Maximum zoom defaults to 1.25×. When a full correction would require more cropping, the app gradually eases stabilization to preserve framing. Increase the limit to allow a tighter crop, or lower it to retain more of the scene.
 
 The browser interface accepts clips up to 100 MB, 60 seconds, 1080p (landscape or portrait), and 120 FPS input. It runs only on `127.0.0.1`; videos are processed on your computer. Temporary working files are removed after processing; preview copies stay in session memory until cleared by restarting the app. Browser exports use H.264/AAC for compatibility and require an additional encoding pass beyond stabilization.
 
@@ -51,6 +53,7 @@ The comparison shows the original video on the left and stabilized output on the
 
 - `--radius 15`: smoothing radius in frames.
 - `--zoom 1.05`: minimum crop zoom.
+- `--max-zoom 1.25`: maximum adaptive crop magnification; stabilization eases where needed to respect this limit.
 - `--fixed-crop`: disable adaptive cropping and recentering.
 - `--comparison PATH`: save an optional side-by-side video.
 - `--no-audio`: skip audio processing and export silent video.

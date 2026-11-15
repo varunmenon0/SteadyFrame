@@ -1,7 +1,35 @@
 import cv2
 import numpy as np
 import pytest
-from video_stabilizer.core import adaptive_crop, estimate_motion, plan_crop_centers, smooth_crop_zooms, smooth_path, stabilize
+from video_stabilizer.core import adaptive_crop, estimate_motion, plan_bounded_crops, plan_crop_centers, smooth_crop_zooms, smooth_path, stabilize
+
+
+def test_crop_limit_preserves_pixels_and_eases_strong_corrections():
+    corrections = []
+    for angle, tx in [(0, 0), (15, 50), (-12, -60), (0, 0)]:
+        affine = cv2.getRotationMatrix2D((159.5, 119.5), angle, 1.04)
+        affine[:, 2] += [tx, 0]
+        corrections.append(np.vstack([affine, [0, 0, 1]]))
+    scenes = [(0, len(corrections))]
+    centers = plan_crop_centers(corrections, 320, 240, 30, scenes)
+    transforms, zooms, strengths = plan_bounded_crops(corrections, centers, 320, 240, 1.05, 1.25, 30, scenes)
+    assert np.min(strengths) < 0.9
+    assert max(zooms) <= 1.25 + 1e-7
+    assert np.max(np.abs(np.diff(strengths))) <= .5 / 30 + 1e-6
+    for transform, required, applied in zip(transforms, zooms, smooth_crop_zooms(zooms)):
+        extra = applied / required
+        envelope = np.array([[extra, 0, 159.5 * (1-extra)], [0, extra, 119.5 * (1-extra)], [0, 0, 1]])
+        final = envelope @ transform
+        assert np.hypot(final[0, 0], final[1, 0]) <= 1.25 + 1e-7
+        result = cv2.warpAffine(np.full((240, 320), 255, np.uint8), final[:2], (320, 240), borderMode=cv2.BORDER_CONSTANT)
+        assert result.min() == 255
+
+
+def test_total_crop_zoom_includes_motion_scale():
+    correction = np.vstack([cv2.getRotationMatrix2D((159.5, 119.5), 0, 1.3), [0, 0, 1]])
+    transform, zoom = adaptive_crop(correction, 320, 240, minimum_zoom=1.05)
+    assert zoom == pytest.approx(1.05, abs=1e-6)
+    assert np.hypot(transform[0, 0], transform[1, 0]) == pytest.approx(zoom)
 
 
 def test_recenter_smoothing_reduces_jitter_and_resets_at_cuts():
@@ -76,6 +104,26 @@ def test_translation_and_textureless_fallback():
     np.testing.assert_array_equal(motion, np.eye(3))
 
 
+def test_centered_zoom_does_not_turn_into_a_false_pan():
+    image = np.random.default_rng(9).integers(0, 256, (480, 640), dtype=np.uint8)
+    image = cv2.GaussianBlur(image, (3, 3), 0)
+    expected = cv2.getRotationMatrix2D((319.5, 239.5), 0, 1.025)
+    zoomed = cv2.warpAffine(image, expected, (640, 480))
+    motion, reliable = estimate_motion(image, zoomed)
+    assert reliable
+    np.testing.assert_allclose(motion[:2], expected, atol=0.4)
+    center = np.array([319.5, 239.5, 1])
+    np.testing.assert_allclose((motion @ center)[:2], center[:2], atol=0.4)
+
+
+def test_degenerate_zoom_fit_falls_back_to_identity(monkeypatch):
+    image = np.random.default_rng(10).integers(0, 256, (240, 320), dtype=np.uint8)
+    monkeypatch.setattr(cv2, "estimateAffinePartial2D", lambda *a, **kw: (np.zeros((2, 3)), np.ones((10, 1), np.uint8)))
+    motion, reliable = estimate_motion(image, image)
+    assert not reliable
+    np.testing.assert_array_equal(motion, np.eye(3))
+
+
 def test_smoothing_reduces_jitter():
     path = np.column_stack([np.tile([-5., 5.], 20), np.zeros((40, 2))])
     assert np.std(np.diff(smooth_path(path, 5)[:, 0])) < np.std(np.diff(path[:, 0])) / 3
@@ -96,6 +144,7 @@ def test_video_stabilization(tmp_path):
                        progress=lambda stage, done, total: events.append((stage, done, total)))
     assert report["frames"] == 40
     assert report["tracking_failures"] == 0
+    assert report["max_crop_zoom"] <= 1.25
     assert not report["audio_preserved"]
     assert events[0][0] == "tracking"
     assert ("rendering", 40, 40) in events

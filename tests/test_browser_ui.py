@@ -35,6 +35,7 @@ def test_upload_process_download_and_replace_input(tmp_path):
     assert app.success
     result = app.session_state["result"]
     assert result["report"]["frames"] == 12
+    assert result["report"]["crop_zoom_limit"] == 1.25
     assert result["after"] and result["comparison"]
     assert len(app.get("download_button")) == 2
     encoded = tmp_path / "browser.mp4"
@@ -54,11 +55,13 @@ def test_optional_comparison_and_audio_can_be_disabled(tmp_path):
     app.file_uploader[0].set_value(("source.mp4", clip(tmp_path / "source.mp4"), "video/mp4")).run()
     app.checkbox[0].uncheck()
     app.checkbox[1].uncheck()
+    app.slider[1].set_value(1.15)
     app.button[0].click().run()
     assert not app.exception
     assert app.success
     assert app.session_state["result"]["comparison"] is None
     assert not app.session_state["result"]["report"]["audio_preserved"]
+    assert app.session_state["result"]["report"]["crop_zoom_limit"] == 1.15
     assert len(app.get("download_button")) == 1
 
 

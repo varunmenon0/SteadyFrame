@@ -69,6 +69,8 @@ with controls:
         st.caption("Start with Balanced. Strong also softens deliberate camera movement.")
         crop = st.slider("Minimum crop", 0, 15, 5, format="%d%%",
                          help="A small crop hides moving borders. Extra cropping is added automatically when needed.")
+        maximum_zoom = st.slider("Maximum zoom", 1.15, 1.60, 1.25, step=0.05, format="%.2f×",
+                                 help="Limits crop magnification. Stabilization is eased during large movements to preserve framing.")
         sound = st.checkbox("Keep audio", value=True)
         comparison = st.checkbox("Include side-by-side download", value=True)
         submitted = st.form_submit_button("Stabilize video", type="primary", disabled=uploaded is None,
@@ -103,7 +105,7 @@ with workspace:
                 output = work / "stabilized.mp4"
                 side_by_side = work / "comparison.mp4" if comparison else None
                 report = stabilize(source, output, radius=radius, zoom=1 + crop / 100,
-                                   comparison=side_by_side, preserve_audio=sound, progress=update)
+                                   comparison=side_by_side, preserve_audio=sound, progress=update, max_zoom=maximum_zoom)
                 encoded_source, encoded_output = work / "before.mp4", work / "after.mp4"
                 encode_for_browser(source, encoded_source)
                 bar.progress(0.90, text="Preparing stabilized playback…")
@@ -118,7 +120,7 @@ with workspace:
                     "before": encoded_source.read_bytes(), "after": encoded_output.read_bytes(),
                     "comparison": comparison_bytes, "report": report,
                     "name": Path(uploaded.name).stem,
-                    "settings": (strength, crop, sound, comparison),
+                    "settings": (strength, crop, sound, comparison, maximum_zoom),
                 }
             bar.empty()
         except (ValueError, OSError, RuntimeError) as error:
@@ -132,7 +134,7 @@ with workspace:
     result = st.session_state.get("result")
     if result:
         st.success("Export ready.")
-        if result["settings"] != (strength, crop, sound, comparison):
+        if result["settings"] != (strength, crop, sound, comparison, maximum_zoom):
             st.info("These previews use your previous settings. Click Stabilize video to apply your changes.")
         before, after = st.columns(2)
         with before:
@@ -153,6 +155,8 @@ with workspace:
                                file_name=result["name"] + "-comparison.mp4", mime="video/mp4", on_click="ignore")
         if report["tracking_failures"]:
             st.warning(f'{report["tracking_failures"]} frame transitions could not be tracked reliably. Check the preview before using the result.')
+        if report["crop_limited_frames"]:
+            st.caption(f'Framing preserved: stabilization was eased in {report["crop_limited_frames"]} frames to stay within the zoom limit.')
         if not report["audio_preserved"]:
             st.caption("The stabilized export is silent: the clip had no audio, or Keep audio was off.")
         st.caption("Previews play independently. Downloads include browser-compatible video and any retained audio.")

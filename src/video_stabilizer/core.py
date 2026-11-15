@@ -41,10 +41,12 @@ def estimate_motion(previous, current):
     )
     if affine is None or inliers.sum() < 6 or not np.isfinite(affine).all():
         return np.eye(3), False
-    # Remove estimated scale so noisy zoom estimates do not accumulate.
-    angle = np.arctan2(affine[1, 0], affine[0, 0])
-    c, s = np.cos(angle), np.sin(angle)
-    return np.array([[c, -s, affine[0, 2]], [s, c, affine[1, 2]], [0, 0, 1]]), True
+    scale = np.hypot(affine[0, 0], affine[1, 0])
+    if not np.isfinite(scale) or scale < 1e-6:
+        return np.eye(3), False
+    # Keep scale with translation: dropping scale alone turns a centered zoom
+    # into a false camera pan because its translation still includes the zoom.
+    return np.vstack([affine, [0, 0, 1]]), True
 
 
 def smooth_path(path, radius):
@@ -80,7 +82,8 @@ def adaptive_crop(correction, width, height, minimum_zoom=1.05, crop_center=None
     # Extreme displacements may put the nominal crop center outside the image.
     if not inside(crop_center, 0):
         crop_center = source_center
-    low, high = 0., 1. / minimum_zoom
+    motion_scale = np.hypot(correction[0, 0], correction[1, 0])
+    low, high = 0., motion_scale / minimum_zoom
     for _ in range(32):
         mid = (low + high) / 2
         if inside(crop_center, mid):
@@ -92,7 +95,73 @@ def adaptive_crop(correction, width, height, minimum_zoom=1.05, crop_center=None
     scale = 1. / low
     crop = np.array([[scale, 0, center[0] - scale * crop_center[0]],
                      [0, scale, center[1] - scale * crop_center[1]], [0, 0, 1]])
-    return crop @ correction, scale
+    return crop @ correction, scale * motion_scale
+
+
+def blend_correction(correction, amount, width, height):
+    """Blend a similarity correction toward identity around the frame center."""
+    center = np.array([(width - 1) / 2, (height - 1) / 2])
+    displacement = (correction @ np.r_[center, 1])[:2] - center
+    angle = amount * np.arctan2(correction[1, 0], correction[0, 0])
+    scale = np.hypot(correction[0, 0], correction[1, 0]) ** amount
+    linear = scale * np.array([[np.cos(angle), -np.sin(angle)], [np.sin(angle), np.cos(angle)]])
+    result = np.eye(3)
+    result[:2, :2] = linear
+    result[:2, 2] = center + amount * displacement - linear @ center
+    return result
+
+
+def crop_at_strength(correction, crop_center, amount, width, height, minimum_zoom):
+    center = np.array([(width - 1) / 2, (height - 1) / 2])
+    candidate = blend_correction(correction, amount, width, height)
+    return adaptive_crop(candidate, width, height, minimum_zoom,
+                         crop_center=center + amount * (crop_center - center))
+
+
+def plan_bounded_crops(corrections, centers, width, height, minimum_zoom, maximum_zoom, fps, scenes):
+    """Find border-safe corrections within the zoom budget, then ease strength.
+
+    Less stabilization is applied where a full correction would crop too much.
+    Strength envelopes anticipate those frames instead of changing abruptly.
+    """
+    strengths = np.ones(len(corrections))
+    _, neutral_zoom = adaptive_crop(np.eye(3), width, height, minimum_zoom)
+    if neutral_zoom > maximum_zoom + 1e-7:
+        raise ValueError("Maximum crop zoom is too small for this video's dimensions")
+    for i, (correction, center) in enumerate(zip(corrections, centers)):
+        _, required = crop_at_strength(correction, center, 1., width, height, minimum_zoom)
+        if required <= maximum_zoom:
+            continue
+        low, high = 0., 1.
+        for _ in range(24):
+            mid = (low + high) / 2
+            _, required = crop_at_strength(correction, center, mid, width, height, minimum_zoom)
+            if required <= maximum_zoom:
+                low = mid
+            else:
+                high = mid
+        strengths[i] = low
+    for start, end in scenes:
+        step = 0.5 / fps
+        for i in range(start + 1, end):
+            strengths[i] = min(strengths[i], strengths[i - 1] + step)
+        for i in range(end - 2, start - 1, -1):
+            strengths[i] = min(strengths[i], strengths[i + 1] + step)
+    transforms, zooms = [], []
+    for i, (correction, center, amount) in enumerate(zip(corrections, centers, strengths)):
+        transform, required = crop_at_strength(correction, center, amount, width, height, minimum_zoom)
+        # Geometric feasibility need not be globally monotone for extreme
+        # rotations. Recheck after easing instead of assuming the search held.
+        while required > maximum_zoom + 1e-7 and amount > 1e-7:
+            amount *= .9
+            transform, required = crop_at_strength(correction, center, amount, width, height, minimum_zoom)
+        if required > maximum_zoom + 1e-7:
+            amount = 0.
+            transform, required = crop_at_strength(correction, center, 0., width, height, minimum_zoom)
+        strengths[i] = amount
+        transforms.append(transform)
+        zooms.append(required)
+    return transforms, zooms, strengths
 
 
 def smooth_crop_zooms(required, max_step=0.005):
@@ -123,7 +192,7 @@ def plan_crop_centers(corrections, width, height, fps, scenes):
     return centers
 
 
-def stabilize(source, destination, radius=15, zoom=1.05, comparison=None, adaptive=True, preserve_audio=True, progress=None):
+def stabilize(source, destination, radius=15, zoom=1.05, comparison=None, adaptive=True, preserve_audio=True, progress=None, max_zoom=1.25):
     source, destination = Path(source), Path(destination)
     paths = [source.resolve(), destination.resolve()]
     if comparison:
@@ -132,6 +201,8 @@ def stabilize(source, destination, radius=15, zoom=1.05, comparison=None, adapti
         raise ValueError("Input, output, and comparison paths must be different")
     if radius < 0 or not np.isfinite(zoom) or zoom < 1:
         raise ValueError("Radius must be nonnegative and zoom must be finite and at least 1")
+    if not np.isfinite(max_zoom) or max_zoom < zoom:
+        raise ValueError("Maximum zoom must be finite and at least the minimum crop zoom")
     started = time.perf_counter()
     capture = cv2.VideoCapture(str(source))
     writers = []
@@ -169,7 +240,8 @@ def stabilize(source, destination, radius=15, zoom=1.05, comparison=None, adapti
                 progress("tracking", len(poses), estimated_frames)
         if progress:
             progress("planning", 0, len(poses))
-        path = np.array([[p[0, 2], p[1, 2], np.arctan2(p[1, 0], p[0, 0])] for p in poses])
+        path = np.array([[p[0, 2], p[1, 2], np.arctan2(p[1, 0], p[0, 0]),
+                          np.log(np.hypot(p[0, 0], p[1, 0]))] for p in poses])
         scenes = list(zip(scene_starts, scene_starts[1:] + [len(poses)]))
         smoothed = np.empty_like(path)
         for start, end in scenes:
@@ -186,20 +258,19 @@ def stabilize(source, destination, radius=15, zoom=1.05, comparison=None, adapti
         zoom_matrix = np.vstack([cv2.getRotationMatrix2D((width / 2, height / 2), 0, zoom), [0, 0, 1]])
         corrections = []
         for i, pose in enumerate(poses):
-            x, y, angle = smoothed[i]
-            c, s = np.cos(angle), np.sin(angle)
+            x, y, angle, log_scale = smoothed[i]
+            c, s = np.exp(log_scale) * np.array([np.cos(angle), np.sin(angle)])
             target = np.array([[c, -s, x], [s, c, y], [0, 0, 1]])
             correction = target @ np.linalg.inv(pose)
             corrections.append(correction)
         centers = plan_crop_centers(corrections, width, height, fps, scenes) if adaptive else [None] * len(poses)
-        crop_zooms = []
-        for i, (correction, crop_center) in enumerate(zip(corrections, centers)):
-            if adaptive:
-                correction, crop_zoom = adaptive_crop(correction, width, height, zoom, crop_center=crop_center)
-            else:
-                correction, crop_zoom = zoom_matrix @ correction, zoom
-            crop_zooms.append(crop_zoom)
-            corrections[i] = correction
+        if adaptive:
+            corrections, crop_zooms, strengths = plan_bounded_crops(
+                corrections, centers, width, height, zoom, max_zoom, fps, scenes)
+        else:
+            corrections = [zoom_matrix @ correction for correction in corrections]
+            crop_zooms = [np.hypot(correction[0, 0], correction[1, 0]) for correction in corrections]
+            strengths = np.ones(len(corrections))
         # Express the limit per second so 30 and 120 FPS clips behave alike.
         rendered_zooms = np.array(crop_zooms)
         if adaptive:
@@ -245,6 +316,9 @@ def stabilize(source, destination, radius=15, zoom=1.05, comparison=None, adapti
                 "scene_cut_frames": scene_starts[1:],
                 "mean_crop_zoom": round(float(np.mean(rendered_zooms)), 4),
                 "max_crop_zoom": round(float(np.max(rendered_zooms)), 4),
+                "crop_zoom_limit": max_zoom if adaptive else None,
+                "crop_limited_frames": int(np.sum(strengths < 1 - 1e-6)),
+                "minimum_correction_strength": round(float(np.min(strengths)), 4),
                 "max_crop_zoom_step": round(float(np.max(np.abs(np.diff(rendered_zooms)))), 6) if len(rendered_zooms) > 1 else 0.,
                 "audio_preserved": audio_preserved}
     finally:
