@@ -201,7 +201,7 @@ def stabilize(source, destination, radius=15, zoom=1.05, comparison=None, adapti
         raise ValueError("Input, output, and comparison paths must be different")
     if radius < 0 or not np.isfinite(zoom) or zoom < 1:
         raise ValueError("Radius must be nonnegative and zoom must be finite and at least 1")
-    if not np.isfinite(max_zoom) or max_zoom < zoom:
+    if adaptive and (not np.isfinite(max_zoom) or max_zoom < zoom):
         raise ValueError("Maximum zoom must be finite and at least the minimum crop zoom")
     started = time.perf_counter()
     capture = cv2.VideoCapture(str(source))

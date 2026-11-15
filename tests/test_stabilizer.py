@@ -32,6 +32,28 @@ def test_total_crop_zoom_includes_motion_scale():
     assert np.hypot(transform[0, 0], transform[1, 0]) == pytest.approx(zoom)
 
 
+def test_crop_strength_resets_at_scene_boundaries():
+    shifted = np.eye(3)
+    shifted[0, 2] = 70
+    corrections = [shifted.copy() for _ in range(10)] + [np.eye(3) for _ in range(10)]
+    scenes = [(0, 10), (10, 20)]
+    centers = plan_crop_centers(corrections, 320, 240, 30, scenes)
+    _, _, strengths = plan_bounded_crops(corrections, centers, 320, 240, 1.05, 1.25, 30, scenes)
+    assert np.max(strengths[:10]) < 1
+    np.testing.assert_allclose(strengths[10:], 1)
+
+
+def test_fixed_crop_is_not_restricted_by_adaptive_zoom_limit(tmp_path):
+    source, output = tmp_path / "input.mp4", tmp_path / "output.mp4"
+    writer = cv2.VideoWriter(str(source), cv2.VideoWriter_fourcc(*"mp4v"), 24, (320, 240))
+    assert writer.isOpened()
+    writer.write(np.full((240, 320, 3), 128, np.uint8))
+    writer.release()
+    report = stabilize(source, output, zoom=1.4, adaptive=False, preserve_audio=False)
+    assert report["crop_zoom_limit"] is None
+    assert report["max_crop_zoom"] == pytest.approx(1.4)
+
+
 def test_recenter_smoothing_reduces_jitter_and_resets_at_cuts():
     corrections = []
     for i in range(30):
