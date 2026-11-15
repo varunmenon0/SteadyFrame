@@ -9,6 +9,7 @@ font = "sans serif"
 [server]
 address = "127.0.0.1"
 maxUploadSize = 100
+showEmailPrompt = false
 
 [browser]
 gatherUsageStats = false
