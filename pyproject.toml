@@ -11,9 +11,11 @@ dependencies = ["numpy>=1.26", "opencv-python-headless>=4.8", "imageio-ffmpeg>=0
 
 [project.optional-dependencies]
 dev = ["pytest>=8"]
+ui = ["streamlit>=1.64,<2"]
 
 [project.scripts]
 video-stabilizer = "video_stabilizer.cli:main"
+video-stabilizer-ui = "video_stabilizer.launcher:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]

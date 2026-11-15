@@ -8,7 +8,28 @@ This reproducible synthetic demo combines translation and rotation shake with a 
 
 The pipeline detects up to 500 corners per frame, tracks them with Lucas–Kanade optical flow, rejects outliers with RANSAC, and estimates camera translation and rotation. It smooths the reconstructed camera path and applies compensating transforms. Adaptive cropping and geometric recentering conceal exposed borders.
 
-## Setup
+## Browser app
+
+![Local browser interface showing original and stabilized previews](docs/browser-interface.jpg)
+
+On a Mac, double-click **Open Video Stabilizer.command** in the project folder. The launcher opens a local browser interface. First-time setup requires Python 3.10 or newer and an internet connection to install dependencies. Keep the launcher's window open while using the app; closing it stops the local server.
+
+Upload a clip, choose Gentle, Balanced, or Strong smoothing, then click **Stabilize video**. The interface shows progress, original and stabilized previews, and downloads for the result and optional side-by-side video. Audio is retained by default. Previews play independently.
+
+The browser interface accepts clips up to 100 MB, 60 seconds, 1080p (landscape or portrait), and 120 FPS input. It runs only on `127.0.0.1`; videos are processed on your computer. Temporary working files are removed after processing; preview copies stay in session memory until cleared by restarting the app. Browser exports use H.264/AAC for compatibility and require an additional encoding pass beyond stabilization.
+
+For manual setup or other platforms:
+
+```sh
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -e '.[dev,ui]'
+video-stabilizer-ui
+```
+
+The interface opens at `http://127.0.0.1:8501`. Stop it with Ctrl+C in its launch window. On Windows, activate with `.venv\Scripts\activate` instead. The Mac launcher is not a signed desktop application.
+
+## Command-line setup
 
 ```sh
 python3 -m venv .venv

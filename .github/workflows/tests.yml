@@ -19,7 +19,7 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - name: Install project and test dependencies
-        run: python -m pip install -e '.[dev]'
+        run: python -m pip install -e '.[dev,ui]'
       - name: Check command-line entry point
         run: video-stabilizer --help
       - name: Run regression tests
