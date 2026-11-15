@@ -27,6 +27,8 @@ The comparison shows the original video on the left and stabilized output on the
 
 The command reports input frame rate, processing throughput, tracking failures, and crop statistics.
 
+Adaptive crop zoom anticipates upcoming motion peaks and eases back afterward. Its rate is limited to 0.15 zoom units per second while remaining at or above each frame's border-safe zoom requirement. This trades some field of view for smoother zoom transitions. Geometric crop-center changes are not yet temporally smoothed.
+
 ## Tests and benchmark
 
 ```sh
@@ -44,5 +46,5 @@ The recorded synthetic run reduced jitter by 89.19% and processed 29.0 frames pe
 - Uses two offline passes and constant frame rate encoding.
 - Models translation and rotation; parallax, rolling shutter, scene cuts, and large foreground motion need additional handling.
 - Falls back to identity motion when tracking fails and reports those failures.
-- Adaptive cropping can produce large or abrupt zoom changes under strong motion. Recentring is geometric and does not track a subject.
+- Adaptive cropping can produce large zoom values under strong motion. Crop-center changes can still be abrupt. Recentring is geometric and does not track a subject.
 - Fixed cropping reflects exposed borders.

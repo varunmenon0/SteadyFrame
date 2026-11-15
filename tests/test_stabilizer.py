@@ -1,7 +1,40 @@
 import cv2
 import numpy as np
 import pytest
-from video_stabilizer.core import adaptive_crop, estimate_motion, smooth_path, stabilize
+from video_stabilizer.core import adaptive_crop, estimate_motion, smooth_crop_zooms, smooth_path, stabilize
+
+
+def test_zoom_envelope_anticipates_peaks_and_preserves_coverage():
+    required = np.array([1.05, 1.05, 1.4, 1.05, 1.05, 1.2, 1.05])
+    smoothed = smooth_crop_zooms(required, max_step=0.02)
+    assert (smoothed >= required).all()
+    assert np.max(np.abs(np.diff(smoothed))) <= 0.02 + 1e-12
+    assert smoothed[0] > required[0]
+    assert smoothed[-1] > required[-1]
+    np.testing.assert_allclose(smooth_crop_zooms([1.05] * 10), 1.05)
+
+
+def test_zoom_envelope_rejects_invalid_values():
+    for values in ([np.nan], [0.9], [[1.1]]):
+        with pytest.raises(ValueError):
+            smooth_crop_zooms(values)
+    with pytest.raises(ValueError):
+        smooth_crop_zooms([1.1], max_step=0)
+
+
+def test_temporal_crop_keeps_rotated_frames_border_free():
+    corrections, required = [], []
+    for angle in [0, 2, 15, -5, 0]:
+        affine = cv2.getRotationMatrix2D((159.5, 119.5), angle, 1)
+        transform, zoom = adaptive_crop(np.vstack([affine, [0, 0, 1]]), 320, 240)
+        corrections.append(transform)
+        required.append(zoom)
+    for transform, raw, applied in zip(corrections, required, smooth_crop_zooms(required)):
+        extra = applied / raw
+        envelope = np.array([[extra, 0, 159.5 * (1 - extra)], [0, extra, 119.5 * (1 - extra)], [0, 0, 1]])
+        image = np.full((240, 320), 255, dtype=np.uint8)
+        result = cv2.warpAffine(image, (envelope @ transform)[:2], (320, 240), borderMode=cv2.BORDER_CONSTANT)
+        assert result.min() == 255
 
 
 @pytest.mark.parametrize("angle,tx,ty", [(0, 0, 0), (0, 40, -30), (15, -20, 10), (-25, 80, 20), (0, 500, -300)])

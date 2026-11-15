@@ -74,6 +74,24 @@ def adaptive_crop(correction, width, height, minimum_zoom=1.05):
     return crop @ correction, scale
 
 
+def smooth_crop_zooms(required, max_step=0.005):
+    """Anticipate crop peaks without ever zooming below the safe requirement.
+
+    Forward and backward envelopes limit zoom changes in both directions.
+    Unlike averaging, this preserves the border coverage of every frame.
+    """
+    if not np.isfinite(max_step) or max_step <= 0:
+        raise ValueError("Maximum zoom step must be positive and finite")
+    result = np.asarray(required, dtype=float).copy()
+    if result.ndim != 1 or not np.isfinite(result).all() or (result < 1).any():
+        raise ValueError("Required zooms must be a finite vector of values at least 1")
+    for i in range(1, len(result)):
+        result[i] = max(result[i], result[i - 1] - max_step)
+    for i in range(len(result) - 2, -1, -1):
+        result[i] = max(result[i], result[i + 1] - max_step)
+    return result
+
+
 def stabilize(source, destination, radius=15, zoom=1.05, comparison=None, adaptive=True):
     source, destination = Path(source), Path(destination)
     paths = [source.resolve(), destination.resolve()]
@@ -120,11 +138,9 @@ def stabilize(source, destination, radius=15, zoom=1.05, comparison=None, adapti
             if not writer.isOpened():
                 raise ValueError(f"Cannot create video: {filename}")
         zoom_matrix = np.vstack([cv2.getRotationMatrix2D((width / 2, height / 2), 0, zoom), [0, 0, 1]])
+        corrections = []
         crop_zooms = []
         for i, pose in enumerate(poses):
-            ok, frame = capture.read()
-            if not ok:
-                raise ValueError("Input changed or could not be decoded on the rendering pass")
             x, y, angle = smoothed[i]
             c, s = np.cos(angle), np.sin(angle)
             target = np.array([[c, -s, x], [s, c, y], [0, 0, 1]])
@@ -134,6 +150,18 @@ def stabilize(source, destination, radius=15, zoom=1.05, comparison=None, adapti
             else:
                 correction, crop_zoom = zoom_matrix @ correction, zoom
             crop_zooms.append(crop_zoom)
+            corrections.append(correction)
+        # Express the limit per second so 30 and 120 FPS clips behave alike.
+        rendered_zooms = smooth_crop_zooms(crop_zooms, max_step=0.15 / fps) if adaptive else np.array(crop_zooms)
+        center = np.array([(width - 1) / 2, (height - 1) / 2])
+        for correction, required, applied in zip(corrections, crop_zooms, rendered_zooms):
+            ok, frame = capture.read()
+            if not ok:
+                raise ValueError("Input changed or could not be decoded on the rendering pass")
+            extra_zoom = applied / required
+            envelope = np.array([[extra_zoom, 0, center[0] * (1 - extra_zoom)],
+                                 [0, extra_zoom, center[1] * (1 - extra_zoom)], [0, 0, 1]])
+            correction = envelope @ correction
             result = cv2.warpAffine(frame, correction[:2], (width, height), borderMode=cv2.BORDER_REFLECT)
             writers[0].write(result)
             if comparison:
@@ -143,8 +171,9 @@ def stabilize(source, destination, radius=15, zoom=1.05, comparison=None, adapti
                 "tracking_failures": int(failures), "seconds": round(time.perf_counter() - started, 3),
                 "processing_fps": round(len(poses) / elapsed, 2),
                 "max_feature_points": 500, "adaptive_crop": adaptive,
-                "mean_crop_zoom": round(float(np.mean(crop_zooms)), 4),
-                "max_crop_zoom": round(float(np.max(crop_zooms)), 4),
+                "mean_crop_zoom": round(float(np.mean(rendered_zooms)), 4),
+                "max_crop_zoom": round(float(np.max(rendered_zooms)), 4),
+                "max_crop_zoom_step": round(float(np.max(np.abs(np.diff(rendered_zooms)))), 6) if len(rendered_zooms) > 1 else 0.,
                 "audio_preserved": False}
     finally:
         capture.release()
