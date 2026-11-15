@@ -1,4 +1,4 @@
-"""Local browser interface. Run with video-stabilizer-ui."""
+"""SteadyFrame local browser interface. Run with steadyframe-ui."""
 import hashlib
 import logging
 from pathlib import Path
@@ -9,7 +9,7 @@ import streamlit as st
 from video_stabilizer.core import stabilize
 from video_stabilizer.web import encode_for_browser, inspect_video
 
-st.set_page_config(page_title="Video Stabilizer", page_icon=":material/movie:", layout="wide")
+st.set_page_config(page_title="SteadyFrame", page_icon=":material/movie:", layout="wide")
 st.markdown("""
 <style>
 .block-container {max-width: 1320px; padding: 1.4rem 2.5rem 1.5rem;}
@@ -48,7 +48,7 @@ hr {border-color: #d5dad9; margin: .4rem 0 1rem !important;}
 }
 </style>
 """, unsafe_allow_html=True)
-st.title("Video Stabilizer")
+st.title("SteadyFrame")
 st.markdown('<p class="app-intro">Smooth a clip, compare the result, and save a copy.</p>', unsafe_allow_html=True)
 st.caption("Local processing. Your video stays on this computer.")
 st.divider()
@@ -94,7 +94,7 @@ with workspace:
         try:
             if uploaded.size > 100 * 1024 * 1024:
                 raise ValueError("Please choose a video smaller than 100 MB.")
-            with tempfile.TemporaryDirectory(prefix="motion-lab-") as directory:
+            with tempfile.TemporaryDirectory(prefix="steadyframe-") as directory:
                 work = Path(directory)
                 source = work / ("input" + Path(uploaded.name).suffix.lower())
                 source.write_bytes(uploaded.getbuffer())

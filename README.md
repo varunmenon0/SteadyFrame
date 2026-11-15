@@ -1,4 +1,6 @@
-# Motion-Aware Video Stabilizer
+# SteadyFrame
+
+[![Tests](https://github.com/varunmenon0/SteadyFrame/actions/workflows/tests.yml/badge.svg)](https://github.com/varunmenon0/SteadyFrame/actions/workflows/tests.yml)
 
 Offline video stabilization built with Python, OpenCV, and NumPy.
 
@@ -12,7 +14,7 @@ The pipeline detects up to 500 corners per frame, tracks them with Lucas–Kanad
 
 ![Local browser interface showing original and stabilized previews](docs/browser-interface.jpg)
 
-On a Mac, double-click **Open Video Stabilizer.command** in the project folder. The launcher opens a local browser interface. First-time setup requires Python 3.10 or newer and an internet connection to install dependencies. Keep the launcher's window open while using the app; closing it stops the local server.
+On a Mac, double-click **Open SteadyFrame.command** in the project folder. The launcher opens a local browser interface. First-time setup requires Python 3.10 or newer and an internet connection to install dependencies. Keep the launcher's window open while using the app; closing it stops the local server.
 
 Upload a clip, choose Gentle, Balanced, or Strong smoothing, then click **Stabilize video**. The interface shows progress, original and stabilized previews, and downloads for the result and optional side-by-side video. Audio is retained by default. Previews play independently.
 
@@ -21,10 +23,12 @@ The browser interface accepts clips up to 100 MB, 60 seconds, 1080p (landscape o
 For manual setup or other platforms:
 
 ```sh
+git clone https://github.com/varunmenon0/SteadyFrame.git
+cd SteadyFrame
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -e '.[dev,ui]'
-video-stabilizer-ui
+steadyframe-ui
 ```
 
 The interface opens at `http://127.0.0.1:8501`. Stop it with Ctrl+C in its launch window. On Windows, activate with `.venv\Scripts\activate` instead. The Mac launcher is not a signed desktop application.
@@ -40,7 +44,7 @@ pip install -e '.[dev]'
 ## Usage
 
 ```sh
-video-stabilizer input.mp4 outputs/stabilized.mp4 --comparison outputs/comparison.mp4
+steadyframe input.mp4 outputs/stabilized.mp4 --comparison outputs/comparison.mp4
 ```
 
 The comparison shows the original video on the left and stabilized output on the right.

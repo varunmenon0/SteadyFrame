@@ -8,7 +8,7 @@ def main():
     try:
         import streamlit  # noqa: F401
     except ImportError:
-        raise SystemExit("Install the browser interface with: pip install 'video-stabilizer[ui]'")
+        raise SystemExit("From the SteadyFrame project folder, install the browser interface with: pip install -e '.[ui]'")
     app = Path(__file__).with_name("ui.py")
     try:
         subprocess.run([sys.executable, "-m", "streamlit", "run", str(app),

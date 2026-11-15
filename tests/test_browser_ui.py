@@ -25,6 +25,7 @@ def clip(path, frames=12, fps=24):
 def test_upload_process_download_and_replace_input(tmp_path):
     app = AppTest.from_file(str(APP), default_timeout=30).run()
     assert not app.exception
+    assert app.title[0].value == "SteadyFrame"
     assert app.button[0].disabled
     data = clip(tmp_path / "source.mp4")
     app.file_uploader[0].set_value(("holiday.mp4", data, "video/mp4")).run()
