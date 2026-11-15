@@ -9,46 +9,74 @@ import streamlit as st
 from video_stabilizer.core import stabilize
 from video_stabilizer.web import encode_for_browser, inspect_video
 
-st.set_page_config(page_title="Motion Lab · Video Stabilizer", page_icon="◈", layout="wide")
+st.set_page_config(page_title="Video Stabilizer", page_icon=":material/movie:", layout="wide")
 st.markdown("""
 <style>
-.block-container {max-width: 1250px; padding-top: 2.8rem;}
-h1 {letter-spacing: -0.05em; font-weight: 750 !important;}
-[data-testid="stMetric"] {border: 1px solid #294054; border-radius: 12px; padding: 14px;}
-[data-testid="stMetricValue"] {font-size: 1.1rem;}
+.block-container {max-width: 1320px; padding: 1.4rem 2.5rem 1.5rem;}
+h1, h2, h3, p, label, button, input {
+    font-family: "Avenir Next", Avenir, "Segoe UI", sans-serif;
+}
+h1, h2, h3 {font-family: "Avenir Next", Avenir, "Segoe UI", sans-serif !important;}
+h1 {font-size: 2rem !important; letter-spacing: -.035em; font-weight: 600 !important; padding-bottom: .35rem;}
+h3 {font-size: 1.05rem !important; letter-spacing: -.01em; font-weight: 600 !important;}
+[data-testid="stMarkdownContainer"] p {line-height: 1.55;}
+[data-testid="stCaptionContainer"] p {font-size: .875rem; line-height: 1.5; color: #5c666c;}
+[data-testid="stCaptionContainer"] {opacity: 1;}
 [data-testid="stToolbar"] {visibility: hidden;}
-[data-testid="stForm"] {border-radius: 16px;}
-.eyebrow {color: #5eead4; font-size: .78rem; letter-spacing: .18em; font-weight: 700;}
+[data-testid="stForm"] {padding: 0; border: 0;}
+[data-testid="stFileUploader"] {background: #fff; border: 1px solid #ccd2d2; border-radius: 4px; padding: .25rem;}
+button[kind="primary"], button[kind="secondary"] {border-radius: 4px; box-shadow: none; font-weight: 500;}
+button[kind="primary"] {background: #2855ad; border-color: #2855ad; color: #fff;}
+button[kind="primary"]:hover {background: #20468f; border-color: #20468f; color: #fff;}
+button[kind="primary"]:disabled {background: #e2e5e5; border-color: #d6dcdc; color: #687278;}
+video {border-radius: 2px !important; background: #16191b;}
+hr {border-color: #d5dad9; margin: .4rem 0 1rem !important;}
+.app-intro {font-size: .95rem; color: #515b60; margin-bottom: .35rem;}
+.clip-details {font-size: .875rem; color: #515b60; border-top: 1px solid #d5dad9; padding-top: .75rem;}
+@media (min-width: 761px) {
+  [data-testid="stHorizontalBlock"]:has([data-testid="stFileUploader"]) > [data-testid="stColumn"]:first-child {
+      padding-right: 1.5rem; border-right: 1px solid #d5dad9;
+  }
+}
+@media (max-width: 760px) {
+  .block-container {padding: 1.3rem 1.2rem;}
+  h1 {font-size: 1.65rem !important;}
+  [data-testid="stHorizontalBlock"]:has([data-testid="stFileUploader"]) {flex-direction: column;}
+  [data-testid="stHorizontalBlock"]:has([data-testid="stFileUploader"]) > [data-testid="stColumn"] {
+      width: 100% !important; flex: 1 1 100% !important;
+  }
+}
 </style>
-<div class="eyebrow">MOTION LAB / LOCAL VIDEO TOOLS</div>
 """, unsafe_allow_html=True)
-st.title("Less shake. More of the moment.")
-st.write("Turn shaky footage into a smoother video. Upload a clip, tune the strength, and export your result.")
-st.caption("Runs on this computer · No cloud upload · Up to 100 MB, 60 seconds, 1080p and 120 FPS input")
+st.title("Video Stabilizer")
+st.markdown('<p class="app-intro">Smooth a clip, compare the result, and save a copy.</p>', unsafe_allow_html=True)
+st.caption("Local processing. Your video stays on this computer.")
+st.divider()
 
-controls, workspace = st.columns([1, 2], gap="large")
+controls, workspace = st.columns([1, 2.6], gap="large")
 with controls:
-    st.subheader("01 / Your clip")
+    st.subheader("Source")
     uploaded = st.file_uploader("Choose a video", type=["mp4", "mov", "m4v", "avi", "mkv"],
                                 help="Drop a video here or browse your files.")
+    st.caption("Up to 100 MB · 60 seconds · 1080p · 120 FPS input")
     identity = hashlib.sha256(uploaded.getbuffer()).hexdigest() if uploaded else None
     if st.session_state.get("input_identity") != identity:
         st.session_state.pop("result", None)
         st.session_state["input_identity"] = identity
-    with st.form("settings"):
-        st.subheader("02 / Make it smoother")
+    with st.form("settings", border=False):
+        st.subheader("Adjustments")
         strength = st.select_slider("Stabilization strength", ["Gentle", "Balanced", "Strong"], value="Balanced")
-        st.caption("Stronger smoothing removes more shake and can soften intentional camera movement.")
+        st.caption("Start with Balanced. Strong also softens deliberate camera movement.")
         crop = st.slider("Minimum crop", 0, 15, 5, format="%d%%",
                          help="A small crop hides moving borders. Extra cropping is added automatically when needed.")
         sound = st.checkbox("Keep audio", value=True)
         comparison = st.checkbox("Include side-by-side download", value=True)
         submitted = st.form_submit_button("Stabilize video", type="primary", disabled=uploaded is None,
                                           use_container_width=True)
-    st.caption("Adaptive cropping is on. Your original file is never overwritten.")
+    st.caption("Borders are cropped automatically. The original file is kept.")
 
 with workspace:
-    st.subheader("03 / Preview & export")
+    st.subheader("Preview")
     if submitted:
         st.session_state.pop("result", None)
         bar = st.progress(0, text="Checking your clip…")
@@ -92,7 +120,7 @@ with workspace:
                     "name": Path(uploaded.name).stem,
                     "settings": (strength, crop, sound, comparison),
                 }
-            bar.progress(1., text="Ready to preview and download")
+            bar.empty()
         except (ValueError, OSError, RuntimeError) as error:
             logging.getLogger(__name__).exception("Video processing failed")
             bar.empty()
@@ -103,7 +131,7 @@ with workspace:
 
     result = st.session_state.get("result")
     if result:
-        st.success("Your stabilized video is ready.")
+        st.success("Export ready.")
         if result["settings"] != (strength, crop, sound, comparison):
             st.info("These previews use your previous settings. Click Stabilize video to apply your changes.")
         before, after = st.columns(2)
@@ -114,10 +142,9 @@ with workspace:
             st.markdown("**Stabilized**")
             st.video(result["after"])
         report = result["report"]
-        one, two, three = st.columns(3)
-        one.metric("Resolution", f'{report["width"]} × {report["height"]}')
-        two.metric("Input rate", f'{report["fps"]:g} FPS')
-        three.metric("Processing", f'{report["seconds"]:.1f}s')
+        st.markdown(f'<p class="clip-details">{report["width"]} × {report["height"]} &nbsp;·&nbsp; '
+                    f'{report["fps"]:g} FPS input &nbsp;·&nbsp; Processed in {report["seconds"]:.1f}s</p>',
+                    unsafe_allow_html=True)
         st.download_button("Download stabilized video", result["after"],
                            file_name=result["name"] + "-stabilized.mp4", mime="video/mp4",
                            type="primary", on_click="ignore", use_container_width=True)
@@ -130,11 +157,10 @@ with workspace:
             st.caption("The stabilized export is silent: the clip had no audio, or Keep audio was off.")
         st.caption("Previews play independently. Downloads include browser-compatible video and any retained audio.")
     elif not submitted:
-        st.info("Choose a clip, then click Stabilize video. Your before-and-after previews will appear here.")
+        st.caption("Add a video to compare the original and stabilized versions here.")
         sample = Path(__file__).resolve().parents[2] / "docs" / "demo.gif"
         if sample.is_file():
-            with st.expander("See a synthetic before-and-after example", expanded=True):
-                st.image(str(sample), caption="Generated translation and rotation shake. Original left, stabilized right.")
+            st.image(str(sample), caption="Example: synthetic shake. Original on the left, stabilized on the right.")
 
 st.divider()
 st.caption("Temporary video files are removed when processing finishes. Preview copies are kept for this session; restart the app to clear them.")
