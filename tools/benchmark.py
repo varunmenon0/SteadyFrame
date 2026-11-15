@@ -1,5 +1,6 @@
 """Reproducible synthetic evaluation; not a substitute for real-footage tests."""
 import argparse
+import hashlib
 import json
 from pathlib import Path
 
@@ -71,6 +72,9 @@ def main():
     report = stabilize(source, output, radius=15)
     before, after = measure_jitter(source), measure_jitter(output)
     report.update({"evaluation": "synthetic translation shake with constant pan; seed=2026",
+                   "settings": {"radius": 15, "minimum_zoom": 1.05, "maximum_zoom": 1.25},
+                   "source_sha256": hashlib.sha256(source.read_bytes()).hexdigest(),
+                   "output_sha256": hashlib.sha256(output.read_bytes()).hexdigest(),
                    "metric": "RMS inter-frame displacement change (pixels/frame^2), phase correlation",
                    "input_jitter": before, "output_jitter": after,
                    "jitter_reduction_percent": 100 * (1 - after / before),
