@@ -1,7 +1,23 @@
 import cv2
 import numpy as np
 import pytest
-from video_stabilizer.core import adaptive_crop, estimate_motion, smooth_crop_zooms, smooth_path, stabilize
+from video_stabilizer.core import adaptive_crop, estimate_motion, plan_crop_centers, smooth_crop_zooms, smooth_path, stabilize
+
+
+def test_recenter_smoothing_reduces_jitter_and_resets_at_cuts():
+    corrections = []
+    for i in range(30):
+        matrix = np.eye(3)
+        matrix[0, 2] = (-20 if i % 2 else 20) if i < 20 else 80
+        corrections.append(matrix)
+    centers = plan_crop_centers(corrections, 320, 240, 30, [(0, 20), (20, 30)])
+    assert np.max(np.abs(np.diff(centers[:20, 0]))) < 1
+    # The new shot's center must not be pulled toward the preceding shot.
+    np.testing.assert_allclose(centers[20:, 0], 167.5)
+    for correction, center in zip(corrections, centers):
+        transform, _ = adaptive_crop(correction, 320, 240, crop_center=center)
+        result = cv2.warpAffine(np.full((240, 320), 255, np.uint8), transform[:2], (320, 240), borderMode=cv2.BORDER_CONSTANT)
+        assert result.min() == 255
 
 
 def test_zoom_envelope_anticipates_peaks_and_preserves_coverage():

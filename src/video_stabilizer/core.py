@@ -55,7 +55,7 @@ def smooth_path(path, radius):
     return np.column_stack([np.convolve(padded[:, i], kernel, mode="valid") for i in range(path.shape[1])])
 
 
-def adaptive_crop(correction, width, height, minimum_zoom=1.05):
+def adaptive_crop(correction, width, height, minimum_zoom=1.05, crop_center=None):
     """Fit an output-aspect rectangle inside the transformed source footprint.
 
     Inverse-mapped corners must lie inside a one-pixel interpolation margin.
@@ -66,7 +66,9 @@ def adaptive_crop(correction, width, height, minimum_zoom=1.05):
     half = center.copy()
     inverse = np.linalg.inv(correction)
     source_center = (correction @ np.r_[center, 1])[:2]
-    crop_center = center + 0.1 * (source_center - center)
+    if crop_center is None:
+        crop_center = center + 0.1 * (source_center - center)
+    crop_center = np.asarray(crop_center, dtype=float)
 
     def inside(candidate, scale):
         corners = candidate + np.array([[-1, -1], [-1, 1], [1, -1], [1, 1]]) * half * scale
@@ -107,6 +109,16 @@ def smooth_crop_zooms(required, max_step=0.005):
     for i in range(len(result) - 2, -1, -1):
         result[i] = max(result[i], result[i + 1] - max_step)
     return result
+
+
+def plan_crop_centers(corrections, width, height, fps, scenes):
+    """Smooth geometric recentering over a quarter-second radius per shot."""
+    center = np.array([(width - 1) / 2, (height - 1) / 2])
+    centers = np.array([center + 0.1 * ((matrix @ np.r_[center, 1])[:2] - center)
+                        for matrix in corrections])
+    for start, end in scenes:
+        centers[start:end] = smooth_path(centers[start:end], max(1, round(fps * 0.25)))
+    return centers
 
 
 def stabilize(source, destination, radius=15, zoom=1.05, comparison=None, adaptive=True):
@@ -164,18 +176,21 @@ def stabilize(source, destination, radius=15, zoom=1.05, comparison=None, adapti
                 raise ValueError(f"Cannot create video: {filename}")
         zoom_matrix = np.vstack([cv2.getRotationMatrix2D((width / 2, height / 2), 0, zoom), [0, 0, 1]])
         corrections = []
-        crop_zooms = []
         for i, pose in enumerate(poses):
             x, y, angle = smoothed[i]
             c, s = np.cos(angle), np.sin(angle)
             target = np.array([[c, -s, x], [s, c, y], [0, 0, 1]])
             correction = target @ np.linalg.inv(pose)
+            corrections.append(correction)
+        centers = plan_crop_centers(corrections, width, height, fps, scenes) if adaptive else [None] * len(poses)
+        crop_zooms = []
+        for i, (correction, crop_center) in enumerate(zip(corrections, centers)):
             if adaptive:
-                correction, crop_zoom = adaptive_crop(correction, width, height, zoom)
+                correction, crop_zoom = adaptive_crop(correction, width, height, zoom, crop_center=crop_center)
             else:
                 correction, crop_zoom = zoom_matrix @ correction, zoom
             crop_zooms.append(crop_zoom)
-            corrections.append(correction)
+            corrections[i] = correction
         # Express the limit per second so 30 and 120 FPS clips behave alike.
         rendered_zooms = np.array(crop_zooms)
         if adaptive:
