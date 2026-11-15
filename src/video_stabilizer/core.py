@@ -123,7 +123,7 @@ def plan_crop_centers(corrections, width, height, fps, scenes):
     return centers
 
 
-def stabilize(source, destination, radius=15, zoom=1.05, comparison=None, adaptive=True, preserve_audio=True):
+def stabilize(source, destination, radius=15, zoom=1.05, comparison=None, adaptive=True, preserve_audio=True, progress=None):
     source, destination = Path(source), Path(destination)
     paths = [source.resolve(), destination.resolve()]
     if comparison:
@@ -146,6 +146,9 @@ def stabilize(source, destination, radius=15, zoom=1.05, comparison=None, adapti
         if not np.isfinite(fps) or fps <= 0:
             raise ValueError("Video does not report a valid frame rate")
         previous = cv2.cvtColor(first, cv2.COLOR_BGR2GRAY)
+        estimated_frames = max(1, int(capture.get(cv2.CAP_PROP_FRAME_COUNT)))
+        if progress:
+            progress("tracking", 0, estimated_frames)
         poses = [np.eye(3)]
         scene_starts = [0]
         failures = 0
@@ -162,6 +165,10 @@ def stabilize(source, destination, radius=15, zoom=1.05, comparison=None, adapti
                 poses.append(motion @ poses[-1])
                 failures += not reliable
             previous = current
+            if progress and len(poses) % 10 == 0:
+                progress("tracking", len(poses), estimated_frames)
+        if progress:
+            progress("planning", 0, len(poses))
         path = np.array([[p[0, 2], p[1, 2], np.arctan2(p[1, 0], p[0, 0])] for p in poses])
         scenes = list(zip(scene_starts, scene_starts[1:] + [len(poses)]))
         smoothed = np.empty_like(path)
@@ -199,7 +206,9 @@ def stabilize(source, destination, radius=15, zoom=1.05, comparison=None, adapti
             for start, end in scenes:
                 rendered_zooms[start:end] = smooth_crop_zooms(crop_zooms[start:end], max_step=0.15 / fps)
         center = np.array([(width - 1) / 2, (height - 1) / 2])
-        for correction, required, applied in zip(corrections, crop_zooms, rendered_zooms):
+        if progress:
+            progress("rendering", 0, len(poses))
+        for index, (correction, required, applied) in enumerate(zip(corrections, crop_zooms, rendered_zooms)):
             ok, frame = capture.read()
             if not ok:
                 raise ValueError("Input changed or could not be decoded on the rendering pass")
@@ -211,6 +220,8 @@ def stabilize(source, destination, radius=15, zoom=1.05, comparison=None, adapti
             writers[0].write(result)
             if comparison:
                 writers[1].write(np.hstack([frame, result]))
+            if progress and ((index + 1) % 10 == 0 or index == len(poses) - 1):
+                progress("rendering", index + 1, len(poses))
         # Finalize containers before FFmpeg reads them (particularly important
         # for MP4, whose index is written when the OpenCV writer closes).
         for writer in writers:
@@ -218,9 +229,13 @@ def stabilize(source, destination, radius=15, zoom=1.05, comparison=None, adapti
         capture.release()
         audio_preserved = False
         if preserve_audio:
+            if progress:
+                progress("audio", 0, 1)
             audio_preserved = retain_audio(source, destination, len(poses) / fps)
             if comparison:
                 retain_audio(source, comparison, len(poses) / fps)
+        if progress:
+            progress("complete", 1, 1)
         elapsed = time.perf_counter() - started
         return {"frames": len(poses), "fps": fps, "width": width, "height": height,
                 "tracking_failures": int(failures), "seconds": round(time.perf_counter() - started, 3),

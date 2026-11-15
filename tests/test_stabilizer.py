@@ -91,10 +91,15 @@ def test_video_stabilization(tmp_path):
         dx = 5 if i % 2 else -5
         writer.write(cv2.warpAffine(base, np.float32([[1, 0, dx], [0, 1, 0]]), (320, 240)))
     writer.release()
-    report = stabilize(source, output, radius=5, zoom=1, comparison=comparison)
+    events = []
+    report = stabilize(source, output, radius=5, zoom=1, comparison=comparison,
+                       progress=lambda stage, done, total: events.append((stage, done, total)))
     assert report["frames"] == 40
     assert report["tracking_failures"] == 0
     assert not report["audio_preserved"]
+    assert events[0][0] == "tracking"
+    assert ("rendering", 40, 40) in events
+    assert events[-1] == ("complete", 1, 1)
     def jitter(path, expected_width):
         capture = cv2.VideoCapture(str(path))
         frames = []
