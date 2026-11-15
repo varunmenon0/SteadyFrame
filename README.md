@@ -24,6 +24,9 @@ The comparison shows the original video on the left and stabilized output on the
 - `--zoom 1.05`: minimum crop zoom.
 - `--fixed-crop`: disable adaptive cropping and recentering.
 - `--comparison PATH`: save an optional side-by-side video.
+- `--no-audio`: skip audio processing and export silent video.
+
+Exports retain the first source audio track by default, including in comparison videos. FFmpeg copies the rendered video stream and encodes audio as AAC, trimmed to the rendered video duration. Silent inputs stay silent. The packaged FFmpeg executable is installed with the Python dependencies; no separate system installation is required. If audio muxing fails, the video-only export is retained and the command reports an error.
 
 The command reports input frame rate, processing throughput, tracking failures, and crop statistics.
 
@@ -44,7 +47,7 @@ The recorded synthetic run reduced jitter by 89.19% and processed 29.0 frames pe
 
 ## Limitations
 
-- Outputs video only; audio and original metadata are not preserved.
+- Retains the first audio track as AAC; additional tracks, subtitles, and original metadata are not preserved.
 - Uses two offline passes and constant frame rate encoding.
 - Models translation and rotation; parallax, rolling shutter, and large foreground motion need additional handling.
 - Scene-cut detection is a conservative luminance heuristic. It can miss similarly lit cuts or treat a strong exposure flash as a cut; it does not handle gradual transitions.

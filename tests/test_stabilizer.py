@@ -94,6 +94,7 @@ def test_video_stabilization(tmp_path):
     report = stabilize(source, output, radius=5, zoom=1, comparison=comparison)
     assert report["frames"] == 40
     assert report["tracking_failures"] == 0
+    assert not report["audio_preserved"]
     def jitter(path, expected_width):
         capture = cv2.VideoCapture(str(path))
         frames = []

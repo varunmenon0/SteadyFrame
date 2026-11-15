@@ -5,6 +5,8 @@ import time
 import cv2
 import numpy as np
 
+from .audio import retain_audio
+
 
 def is_scene_cut(previous, current):
     """Conservatively identify abrupt changes in luminance distribution.
@@ -121,7 +123,7 @@ def plan_crop_centers(corrections, width, height, fps, scenes):
     return centers
 
 
-def stabilize(source, destination, radius=15, zoom=1.05, comparison=None, adaptive=True):
+def stabilize(source, destination, radius=15, zoom=1.05, comparison=None, adaptive=True, preserve_audio=True):
     source, destination = Path(source), Path(destination)
     paths = [source.resolve(), destination.resolve()]
     if comparison:
@@ -209,6 +211,16 @@ def stabilize(source, destination, radius=15, zoom=1.05, comparison=None, adapti
             writers[0].write(result)
             if comparison:
                 writers[1].write(np.hstack([frame, result]))
+        # Finalize containers before FFmpeg reads them (particularly important
+        # for MP4, whose index is written when the OpenCV writer closes).
+        for writer in writers:
+            writer.release()
+        capture.release()
+        audio_preserved = False
+        if preserve_audio:
+            audio_preserved = retain_audio(source, destination, len(poses) / fps)
+            if comparison:
+                retain_audio(source, comparison, len(poses) / fps)
         elapsed = time.perf_counter() - started
         return {"frames": len(poses), "fps": fps, "width": width, "height": height,
                 "tracking_failures": int(failures), "seconds": round(time.perf_counter() - started, 3),
@@ -219,7 +231,7 @@ def stabilize(source, destination, radius=15, zoom=1.05, comparison=None, adapti
                 "mean_crop_zoom": round(float(np.mean(rendered_zooms)), 4),
                 "max_crop_zoom": round(float(np.max(rendered_zooms)), 4),
                 "max_crop_zoom_step": round(float(np.max(np.abs(np.diff(rendered_zooms)))), 6) if len(rendered_zooms) > 1 else 0.,
-                "audio_preserved": False}
+                "audio_preserved": audio_preserved}
     finally:
         capture.release()
         for writer in writers:
