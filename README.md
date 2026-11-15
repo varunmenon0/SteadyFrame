@@ -27,6 +27,8 @@ The comparison shows the original video on the left and stabilized output on the
 
 The command reports input frame rate, processing throughput, tracking failures, and crop statistics.
 
+Abrupt changes in luminance distribution reset the camera path. Trajectory and crop-zoom smoothing run independently within each detected scene, preventing motion from one shot from influencing the next. Reports include the number of detected cuts and their zero-based frame indices.
+
 Adaptive crop zoom anticipates upcoming motion peaks and eases back afterward. Its rate is limited to 0.15 zoom units per second while remaining at or above each frame's border-safe zoom requirement. This trades some field of view for smoother zoom transitions. Geometric crop-center changes are not yet temporally smoothed.
 
 ## Tests and benchmark
@@ -44,7 +46,8 @@ The recorded synthetic run reduced jitter by 89.19% and processed 29.0 frames pe
 
 - Outputs video only; audio and original metadata are not preserved.
 - Uses two offline passes and constant frame rate encoding.
-- Models translation and rotation; parallax, rolling shutter, scene cuts, and large foreground motion need additional handling.
+- Models translation and rotation; parallax, rolling shutter, and large foreground motion need additional handling.
+- Scene-cut detection is a conservative luminance heuristic. It can miss similarly lit cuts or treat a strong exposure flash as a cut; it does not handle gradual transitions.
 - Falls back to identity motion when tracking fails and reports those failures.
 - Adaptive cropping can produce large zoom values under strong motion. Crop-center changes can still be abrupt. Recentring is geometric and does not track a subject.
 - Fixed cropping reflects exposed borders.

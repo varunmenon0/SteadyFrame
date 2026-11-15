@@ -6,6 +6,23 @@ import cv2
 import numpy as np
 
 
+def is_scene_cut(previous, current):
+    """Conservatively identify abrupt changes in luminance distribution.
+
+    This heuristic can miss cuts between similarly lit scenes and can classify
+    a strong exposure flash as a cut. It is not a semantic shot detector.
+    """
+    previous = cv2.resize(previous, (160, 90), interpolation=cv2.INTER_AREA)
+    current = cv2.resize(current, (160, 90), interpolation=cv2.INTER_AREA)
+    histograms = []
+    for image in (previous, current):
+        histogram = cv2.calcHist([image], [0], None, [32], [0, 256])
+        histograms.append(cv2.normalize(histogram, None, norm_type=cv2.NORM_L1))
+    distance = cv2.compareHist(*histograms, cv2.HISTCMP_BHATTACHARYYA)
+    difference = float(np.mean(cv2.absdiff(previous, current)))
+    return distance > 0.65 and difference > 35
+
+
 def estimate_motion(previous, current):
     points = cv2.goodFeaturesToTrack(previous, 500, 0.01, 10)
     if points is None or len(points) < 6:
@@ -116,19 +133,27 @@ def stabilize(source, destination, radius=15, zoom=1.05, comparison=None, adapti
             raise ValueError("Video does not report a valid frame rate")
         previous = cv2.cvtColor(first, cv2.COLOR_BGR2GRAY)
         poses = [np.eye(3)]
+        scene_starts = [0]
         failures = 0
         while True:
             ok, frame = capture.read()
             if not ok:
                 break
             current = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-            motion, reliable = estimate_motion(previous, current)
-            poses.append(motion @ poses[-1])
-            failures += not reliable
+            if is_scene_cut(previous, current):
+                scene_starts.append(len(poses))
+                poses.append(np.eye(3))
+            else:
+                motion, reliable = estimate_motion(previous, current)
+                poses.append(motion @ poses[-1])
+                failures += not reliable
             previous = current
         path = np.array([[p[0, 2], p[1, 2], np.arctan2(p[1, 0], p[0, 0])] for p in poses])
-        path[:, 2] = np.unwrap(path[:, 2])
-        smoothed = smooth_path(path, radius)
+        scenes = list(zip(scene_starts, scene_starts[1:] + [len(poses)]))
+        smoothed = np.empty_like(path)
+        for start, end in scenes:
+            path[start:end, 2] = np.unwrap(path[start:end, 2])
+            smoothed[start:end] = smooth_path(path[start:end], radius)
         capture.release()
         capture = cv2.VideoCapture(str(source))
         for filename, size in [(destination, (width, height))] + ([(Path(comparison), (width * 2, height))] if comparison else []):
@@ -152,7 +177,10 @@ def stabilize(source, destination, radius=15, zoom=1.05, comparison=None, adapti
             crop_zooms.append(crop_zoom)
             corrections.append(correction)
         # Express the limit per second so 30 and 120 FPS clips behave alike.
-        rendered_zooms = smooth_crop_zooms(crop_zooms, max_step=0.15 / fps) if adaptive else np.array(crop_zooms)
+        rendered_zooms = np.array(crop_zooms)
+        if adaptive:
+            for start, end in scenes:
+                rendered_zooms[start:end] = smooth_crop_zooms(crop_zooms[start:end], max_step=0.15 / fps)
         center = np.array([(width - 1) / 2, (height - 1) / 2])
         for correction, required, applied in zip(corrections, crop_zooms, rendered_zooms):
             ok, frame = capture.read()
@@ -171,6 +199,8 @@ def stabilize(source, destination, radius=15, zoom=1.05, comparison=None, adapti
                 "tracking_failures": int(failures), "seconds": round(time.perf_counter() - started, 3),
                 "processing_fps": round(len(poses) / elapsed, 2),
                 "max_feature_points": 500, "adaptive_crop": adaptive,
+                "scene_cuts": len(scene_starts) - 1,
+                "scene_cut_frames": scene_starts[1:],
                 "mean_crop_zoom": round(float(np.mean(rendered_zooms)), 4),
                 "max_crop_zoom": round(float(np.max(rendered_zooms)), 4),
                 "max_crop_zoom_step": round(float(np.max(np.abs(np.diff(rendered_zooms)))), 6) if len(rendered_zooms) > 1 else 0.,
