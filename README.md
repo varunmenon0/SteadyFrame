@@ -123,3 +123,7 @@ PYTHONPATH=src .venv/bin/python tools/demo.py
 
 This last command regenerates the separate [synthetic demo](docs/demo.gif).
 
+## License
+
+SteadyFrame's code is released under the [MIT License](LICENSE), copyright 2026 Varun Menon. Third-party demo footage retains its original terms; see [media credits](docs/MEDIA.md).
+
