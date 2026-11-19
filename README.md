@@ -28,7 +28,9 @@ Before uploading, use the **Real footage** and **Synthetic benchmark** tabs to v
 
 Maximum zoom defaults to 1.25×. When a full correction would require more cropping, the app gradually eases stabilization to preserve framing. Increase the limit to allow a tighter crop, or lower it to retain more of the scene.
 
-The browser interface accepts clips up to 100 MB, 60 seconds, 1080p (landscape or portrait), and 120 FPS input. It runs only on `127.0.0.1`; videos are processed on your computer. Temporary working files are removed after processing; preview copies stay in session memory until cleared by restarting the app. Browser exports use H.264/AAC for compatibility and require an additional encoding pass beyond stabilization.
+The browser interface accepts clips up to 500 MB, 60 seconds, 4K UHD (3840×2160) or DCI 4K (4096×2160), and 120 FPS input. Portrait orientations are supported too. It runs only on `127.0.0.1`; videos are processed on your computer. Temporary working files are removed after processing; preview copies stay in session memory until cleared by restarting the app. Browser exports use H.264/AAC for compatibility and require an additional encoding pass beyond stabilization.
+
+4K clips retain their native output resolution. Feature tracking uses an analysis image capped at 1920 pixels on its longest edge, then maps tracked coordinates back to native pixels before estimating motion. Rendering and export use the full-resolution frames. Side-by-side exports are twice the input width.
 
 For manual setup or other platforms:
 

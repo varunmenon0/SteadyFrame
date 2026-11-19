@@ -26,6 +26,16 @@ def is_scene_cut(previous, current):
 
 
 def estimate_motion(previous, current):
+    # Track on a bounded-size image, but estimate transforms in native pixels.
+    # This avoids running optical flow over every 4K pixel.
+    height, width = previous.shape[:2]
+    factor = min(1., 1920 / max(width, height))
+    coordinate_scale = np.ones(2, dtype=np.float32)
+    if factor < 1:
+        size = (round(width * factor), round(height * factor))
+        previous = cv2.resize(previous, size, interpolation=cv2.INTER_AREA)
+        current = cv2.resize(current, size, interpolation=cv2.INTER_AREA)
+        coordinate_scale = np.array([width / size[0], height / size[1]], dtype=np.float32)
     points = cv2.goodFeaturesToTrack(previous, 500, 0.01, 10)
     if points is None or len(points) < 6:
         return np.eye(3), False
@@ -36,8 +46,8 @@ def estimate_motion(previous, current):
     if valid.sum() < 6:
         return np.eye(3), False
     affine, inliers = cv2.estimateAffinePartial2D(
-        points[valid], tracked[valid], method=cv2.RANSAC,
-        ransacReprojThreshold=3.0,
+        points[valid] * coordinate_scale, tracked[valid] * coordinate_scale, method=cv2.RANSAC,
+        ransacReprojThreshold=3.0 * max(coordinate_scale),
     )
     if affine is None or inliers.sum() < 6 or not np.isfinite(affine).all():
         return np.eye(3), False
@@ -312,6 +322,7 @@ def stabilize(source, destination, radius=15, zoom=1.05, comparison=None, adapti
                 "tracking_failures": int(failures), "seconds": round(time.perf_counter() - started, 3),
                 "processing_fps": round(len(poses) / elapsed, 2),
                 "max_feature_points": 500, "adaptive_crop": adaptive,
+                "tracking_max_dimension": 1920,
                 "scene_cuts": len(scene_starts) - 1,
                 "scene_cut_frames": scene_starts[1:],
                 "mean_crop_zoom": round(float(np.mean(rendered_zooms)), 4),

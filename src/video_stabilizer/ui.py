@@ -59,7 +59,7 @@ with controls:
     st.subheader("Source")
     uploaded = st.file_uploader("Choose a video", type=["mp4", "mov", "m4v", "avi", "mkv"],
                                 help="Drop a video here or browse your files.")
-    st.caption("Up to 100 MB · 60 seconds · 1080p · 120 FPS input")
+    st.caption("Up to 500 MB · 60 seconds · 4K · 120 FPS input")
     identity = hashlib.sha256(uploaded.getbuffer()).hexdigest() if uploaded else None
     if st.session_state.get("input_identity") != identity:
         st.session_state.pop("result", None)
@@ -95,8 +95,8 @@ with workspace:
             bar.progress(low + (high - low) * fraction, text=label + "…")
 
         try:
-            if uploaded.size > 100 * 1024 * 1024:
-                raise ValueError("Please choose a video smaller than 100 MB.")
+            if uploaded.size > 500 * 1024 * 1024:
+                raise ValueError("Please choose a video smaller than 500 MB.")
             with tempfile.TemporaryDirectory(prefix="steadyframe-") as directory:
                 work = Path(directory)
                 source = work / ("input" + Path(uploaded.name).suffix.lower())

@@ -12,7 +12,7 @@ def main():
     app = Path(__file__).with_name("ui.py")
     try:
         subprocess.run([sys.executable, "-m", "streamlit", "run", str(app),
-                        "--server.address=127.0.0.1", "--server.maxUploadSize=100",
+                        "--server.address=127.0.0.1", "--server.maxUploadSize=500",
                         "--browser.gatherUsageStats=false", "--server.showEmailPrompt=false",
                         "--server.headless=false"], check=True)
     except KeyboardInterrupt:

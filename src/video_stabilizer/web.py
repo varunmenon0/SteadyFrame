@@ -18,8 +18,8 @@ def inspect_video(path):
         frames = capture.get(cv2.CAP_PROP_FRAME_COUNT)
         if not np.isfinite([fps, frames]).all() or fps <= 0 or frames < 1:
             raise ValueError("This video has invalid timing information.")
-        if min(width, height) < 4 or max(width, height) > 1920 or width * height > 1920 * 1080:
-            raise ValueError("Please use a video up to 1080p (landscape or portrait).")
+        if min(width, height) < 4 or max(width, height) > 4096 or min(width, height) > 2160:
+            raise ValueError("Please use a video up to 4K UHD or DCI 4K (landscape or portrait).")
         if fps > 120.1 or frames / fps > 60.1:
             raise ValueError("Please use a clip up to 60 seconds and 120 FPS.")
         return {"width": width, "height": height, "fps": fps, "frames": int(frames), "duration": frames / fps}
@@ -33,7 +33,7 @@ def encode_for_browser(source, destination, preserve_audio=True):
                "-i", str(Path(source).resolve()), "-map", "0:v:0"]
     if preserve_audio:
         command += ["-map", "0:a:0?"]
-    command += ["-c:v", "libx264", "-preset", "fast", "-crf", "20",
+    command += ["-c:v", "libx264", "-threads:v", "4", "-preset", "fast", "-crf", "20",
                 "-vf", "pad=ceil(iw/2)*2:ceil(ih/2)*2", "-pix_fmt", "yuv420p",
                 "-c:a", "aac", "-movflags", "+faststart", str(Path(destination).resolve())]
     result = subprocess.run(command, capture_output=True, text=True)

@@ -12,12 +12,13 @@ from video_stabilizer.web import inspect_video
 APP = Path(__file__).resolve().parents[1] / "src" / "video_stabilizer" / "ui.py"
 
 
-def clip(path, frames=12, fps=24):
-    writer = cv2.VideoWriter(str(path), cv2.VideoWriter_fourcc(*"mp4v"), fps, (320, 240))
+def clip(path, frames=12, fps=24, size=(320, 240)):
+    writer = cv2.VideoWriter(str(path), cv2.VideoWriter_fourcc(*"mp4v"), fps, size)
     assert writer.isOpened()
     base = np.random.default_rng(42).integers(0, 256, (240, 320, 3), dtype=np.uint8)
+    base = cv2.resize(base, size)
     for i in range(frames):
-        writer.write(cv2.warpAffine(base, np.float32([[1, 0, i % 2 * 4], [0, 1, 0]]), (320, 240)))
+        writer.write(cv2.warpAffine(base, np.float32([[1, 0, i % 2 * 4], [0, 1, 0]]), size))
     writer.release()
     return path.read_bytes()
 
@@ -83,3 +84,24 @@ def test_browser_limits_reject_long_video(tmp_path):
     clip(path, frames=16, fps=0.25)
     with pytest.raises(ValueError, match="60 seconds"):
         inspect_video(path)
+
+
+def test_4k_upload_preserves_native_download_resolution(tmp_path):
+    app = AppTest.from_file(str(APP), default_timeout=60).run()
+    data = clip(tmp_path / "4k.mp4", frames=4, size=(3840, 2160))
+    app.file_uploader[0].set_value(("4k.mp4", data, "video/mp4")).run()
+    app.checkbox[1].uncheck()
+    app.button[0].click().run()
+    assert not app.exception
+    assert app.success
+    result = app.session_state["result"]
+    assert (result["report"]["width"], result["report"]["height"]) == (3840, 2160)
+    output = tmp_path / "download.mp4"
+    output.write_bytes(result["after"])
+    capture = cv2.VideoCapture(str(output))
+    try:
+        ok, frame = capture.read()
+        assert ok and frame.shape == (2160, 3840, 3)
+        assert capture.get(cv2.CAP_PROP_FRAME_COUNT) == 4
+    finally:
+        capture.release()
