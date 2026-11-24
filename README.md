@@ -4,6 +4,8 @@
 
 Video stabilization with local processing, available as a standalone browser app and a Python desktop tool.
 
+**[Open SteadyFrame](https://steadyframe.vercel.app)** — stabilize and export a short clip entirely on your device. No installation or account required.
+
 ![Real handheld footage compared with SteadyFrame output](docs/real-demo.gif)
 
 Real handheld footage, with the original on the left and SteadyFrame Balanced output on the right. This is an eight-second preview of the 20-second evaluated clip; no camera shake was added. [Watch the full comparison](docs/real-demo.mp4) · [Footage credit and processing details](docs/MEDIA.md).
@@ -46,6 +48,8 @@ Open `http://127.0.0.1:8787`. Hosted deployments require HTTPS for WebCodecs.
 Import this repository into Vercel with its root directory unchanged. The
 included `vercel.json` publishes `web/` without a build step or server functions.
 Keep the framework preset at **Other**; no environment variables are needed.
+The public deployment at `steadyframe.vercel.app` is connected to the `main`
+branch, so future pushes deploy automatically after Vercel builds them.
 
 Run the browser motion tests with `node --test web/motion.test.mjs`. They cover
 outlier rejection, matrix inversion, jitter smoothing, scene isolation, and
