@@ -1,0 +1,28 @@
+{
+  "method": "ORB descriptor matches and RANSAC similarity transforms; RMS change in frame-center displacement and rotation (pixel-equivalent).",
+  "evaluated_triplets": 358,
+  "total_triplets": 358,
+  "shared_triplet_coverage": 1.0,
+  "note": "Same reliable frame triplets for all clips. Estimated global image motion, not ground truth or a perceptual quality score.",
+  "clips": {
+    "sample-input.mp4": {
+      "motion_jitter_rms": 1.5369517461550568,
+      "zoom_acceleration_rms": 0.0007417346796250131,
+      "median_inliers": 1193.0
+    },
+    "sample-input-steadyframe.mp4": {
+      "motion_jitter_rms": 0.34827738324120533,
+      "zoom_acceleration_rms": 0.0011154217894326123,
+      "median_inliers": 1232.0,
+      "estimated_jitter_reduction_percent": 77.33973209552741
+    }
+  },
+  "fixture": "First six seconds of the CC0 fox clip, resized to 960x540, H.264; web/media/sample-input.mp4",
+  "implementation": "Browser OpenCV.js optical flow and JavaScript similarity stabilization; balanced 0.5s smoothing and 1.25x crop budget",
+  "source_sha256": "7136985c1bd4ec79294bd0c3a178395a8be87bc75f556e88392d68a2a080c333",
+  "export_sha256": "6e5510b3f272a8544e0afb562fe7d60bd30cda38acbb9adc8570106e554816e1",
+  "input_frames": 360,
+  "decoded_output_frames": 360,
+  "max_crop": 1.1,
+  "date": "2026-11-24"
+}

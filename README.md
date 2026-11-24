@@ -2,7 +2,7 @@
 
 [![Tests](https://github.com/varunmenon0/SteadyFrame/actions/workflows/tests.yml/badge.svg)](https://github.com/varunmenon0/SteadyFrame/actions/workflows/tests.yml)
 
-Offline video stabilization built with Python, OpenCV, and NumPy.
+Video stabilization with local processing, available as a standalone browser app and a Python desktop tool.
 
 ![Real handheld footage compared with SteadyFrame output](docs/real-demo.gif)
 
@@ -16,7 +16,55 @@ This comparison uses the exact 120 frames evaluated by the seeded 1080p / 120 FP
 
 The pipeline detects up to 500 corners per frame, tracks them with Lucas–Kanade optical flow, rejects outliers with RANSAC, and estimates camera translation, rotation, and zoom. It smooths the reconstructed camera path and applies compensating transforms. Adaptive cropping and geometric recentering conceal exposed borders.
 
-## Browser app
+## Standalone browser app
+
+![Standalone browser app after a local 4K export](docs/web-interface.jpg)
+
+The `web/` directory is a static application. It reads the selected file with
+WebCodecs, analyzes camera movement in an OpenCV.js worker, and exports an H.264
+MP4 with Mediabunny. Video frames and audio stay on the visitor's device. No
+upload endpoint, Python server, account, or API key is required.
+
+Choose a file or try the included real-footage sample. Adjust smoothing and crop
+allowance, stabilize, then preview and download the result. The first audio track
+is copied to MP4 when its codec is supported. For incompatible audio, the app
+offers an explicit silent export through the audio checkbox.
+
+The browser demo accepts clips up to 30 seconds, 150 MB, 4K (including portrait),
+and 4,000 frames. H.264 export depends on the device's browser encoder; current
+Chrome or Edge is recommended. Unsupported codecs and resolutions are reported
+before analysis. Processing uses two decoding passes and keeps transforms rather
+than an entire video of frames in memory.
+
+To preview locally:
+
+```sh
+python3 tools/serve_web.py
+```
+
+Open `http://127.0.0.1:8787`. Hosted deployments require HTTPS for WebCodecs.
+Import this repository into Vercel with its root directory unchanged. The
+included `vercel.json` publishes `web/` without a build step or server functions.
+Keep the framework preset at **Other**; no environment variables are needed.
+
+Run the browser motion tests with `node --test web/motion.test.mjs`. They cover
+outlier rejection, matrix inversion, jitter smoothing, scene isolation, and
+border coverage under the crop budget. Library versions, licenses, and media
+credits are recorded in [`web/THIRD_PARTY.md`](web/THIRD_PARTY.md).
+
+The 97.30% synthetic benchmark and the comparison media below were produced by
+the Python pipeline. They do not assert an identical result for the browser port.
+
+The browser's six-second real-footage sample measured **77.34% less estimated
+global-motion jitter**, with all 358 shared frame triplets evaluated and all 360
+output frames decoded successfully. This is an image-motion estimate, not ground
+truth or a perceptual score. [Recorded browser result](benchmarks/browser-fox-6s.json).
+A separate one-second 3840×2160 / 30 FPS fixture, upscaled from the fox footage
+and given an AAC test tone, was processed and played back at native output
+dimensions with its audio track. Cancellation, retry, and desktop/mobile layouts
+were also checked manually.
+
+## Local Python interface
 
 ![Local browser interface showing original and stabilized previews](docs/browser-interface.jpg)
 

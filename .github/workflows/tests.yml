@@ -8,6 +8,19 @@ permissions:
   contents: read
 
 jobs:
+  browser-math:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+      - name: Check browser modules
+        run: |
+          node --check web/app.mjs
+          node --check web/analysis-worker.js
+      - name: Test motion estimation and crop coverage
+        run: node --test web/motion.test.mjs
   test:
     runs-on: ubuntu-latest
     strategy:

@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta
+      name="description"
+      content="Stabilize a short video in your browser. SteadyFrame processes files on your device and exports MP4."
+    />
+    <meta name="theme-color" content="#f3f4f3" />
+    <title>SteadyFrame — Video stabilizer</title>
+    <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="./style.css" />
+    <script type="module" src="./app.mjs"></script>
+  </head>
+  <body>
+    <header>
+      <a class="wordmark" href="./" aria-label="SteadyFrame home"
+        ><svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M8 3H3v5m13-5h5v5M3 16v5h5m13-5v5h-5M7 12h10" /></svg
+        >SteadyFrame</a
+      ><a
+        href="https://github.com/varunmenon0/SteadyFrame"
+        target="_blank"
+        rel="noopener"
+        >Source code <span aria-hidden="true">↗</span></a
+      >
+    </header>
+    <main>
+      <div class="intro">
+        <h1>A steadier shot.</h1>
+        <p>Reduce camera shake. Keep the movement that matters.</p>
+      </div>
+      <div id="unsupported" class="notice" hidden>
+        This browser doesn’t support local video export. Open this page in a
+        recent version of Chrome or Edge.
+      </div>
+      <div class="workspace">
+        <aside aria-label="Video controls">
+          <form id="controls">
+            <label class="field-title" for="file">Your video</label>
+            <label id="dropzone" class="dropzone" for="file"
+              ><span class="upload-symbol" aria-hidden="true">↑</span
+              ><strong id="filename">Choose a video</strong
+              ><span id="filehint">or drop one here</span
+              ><input
+                id="file"
+                type="file"
+                accept="video/*,.mkv,.mov,.mp4,.webm"
+            /></label>
+            <p class="fineprint">
+              Up to 30 seconds · 150 MB<br />MP4, MOV or WebM · up to 4K
+            </p>
+            <button type="button" id="sample" class="text-button">
+              Try a sample clip <span aria-hidden="true">↗</span>
+            </button>
+            <div class="settings">
+              <label class="field-title" for="smoothing"
+                >Smoothing <output id="smoothing-value">Balanced</output></label
+              >
+              <input
+                id="smoothing"
+                type="range"
+                min="0.2"
+                max="1"
+                step="0.1"
+                value="0.5"
+              />
+              <div class="range-labels">
+                <span>Follow movement</span><span>More steady</span>
+              </div>
+              <label class="field-title crop-label" for="crop"
+                >Crop allowance</label
+              >
+              <select id="crop">
+                <option value="1.15">Small · 1.15×</option>
+                <option value="1.25" selected>Balanced · 1.25×</option>
+                <option value="1.4">More room · 1.40×</option>
+              </select>
+              <p class="fineprint">
+                A little cropping gives the frame room to move.
+              </p>
+              <label class="check"
+                ><input type="checkbox" id="audio" checked /> Keep original
+                audio</label
+              >
+            </div>
+            <button id="run" class="primary" disabled>
+              Stabilize video <span aria-hidden="true">→</span>
+            </button>
+            <button id="cancel" type="button" class="secondary" hidden>
+              Cancel
+            </button>
+          </form>
+          <p class="local-note">
+            <span aria-hidden="true">●</span> Processed on your device.<br />Your
+            video stays in this browser.
+          </p>
+        </aside>
+        <section class="preview" aria-label="Video preview">
+          <div class="preview-bar">
+            <div class="tabs" role="tablist" aria-label="Preview">
+              <button
+                id="original-tab"
+                role="tab"
+                aria-selected="true"
+                aria-controls="original-panel"
+              >
+                Original</button
+              ><button
+                id="result-tab"
+                role="tab"
+                aria-selected="false"
+                aria-controls="result-panel"
+                disabled
+              >
+                Stabilized
+              </button>
+            </div>
+            <span id="video-info"></span>
+          </div>
+          <div
+            id="original-panel"
+            role="tabpanel"
+            aria-labelledby="original-tab"
+            class="viewer"
+          >
+            <div id="empty">
+              <svg viewBox="0 0 80 60" aria-hidden="true">
+                <path
+                  d="M18 18v-8h12m20 0h12v8M18 42v8h12m20 0h12v-8M34 23l14 7-14 7z"
+                />
+              </svg>
+              <p>Start with a shaky video.</p>
+              <span>Preview it here, then stabilize.</span>
+            </div>
+            <video id="original" controls playsinline hidden></video>
+          </div>
+          <div
+            id="result-panel"
+            role="tabpanel"
+            aria-labelledby="result-tab"
+            class="viewer"
+            hidden
+          >
+            <video id="result" controls playsinline></video>
+          </div>
+          <div class="status-area">
+            <div id="status" role="status" aria-live="polite">
+              Ready when you are.
+            </div>
+            <progress
+              id="progress"
+              max="100"
+              value="0"
+              hidden
+              aria-label="Stabilization progress"
+            ></progress
+            ><a id="download" class="download" hidden
+              >Download MP4 <span aria-hidden="true">↓</span></a
+            >
+          </div>
+        </section>
+      </div>
+      <section class="examples" aria-labelledby="examples-title">
+        <div class="section-title">
+          <h2 id="examples-title">In motion</h2>
+          <span>Original / stabilized</span>
+        </div>
+        <div class="example-grid">
+          <figure>
+            <video
+              controls
+              playsinline
+              preload="none"
+              poster="./media/real-poster.jpg"
+              src="./media/real-demo.mp4"
+            ></video>
+            <figcaption>
+              <strong>Handheld footage</strong
+              ><span>A fox in the yard. Natural camera shake.</span>
+            </figcaption>
+          </figure>
+          <figure>
+            <video
+              controls
+              playsinline
+              preload="none"
+              poster="./media/synthetic-poster.jpg"
+              src="./media/synthetic-benchmark.mp4"
+            ></video>
+            <figcaption>
+              <strong>A controlled test</strong
+              ><span
+                >97.3% less jitter in the desktop synthetic benchmark.</span
+              >
+            </figcaption>
+          </figure>
+        </div>
+        <p class="fineprint">
+          These comparisons were made with the desktop version. Browser results
+          depend on the clip and settings.
+          <a
+            href="https://github.com/varunmenon0/SteadyFrame/blob/main/docs/MEDIA.md"
+            target="_blank"
+            rel="noopener"
+            >Footage credits & benchmark details ↗</a
+          >
+        </p>
+      </section>
+    </main>
+    <footer>
+      <span>SteadyFrame · By Varun Menon</span
+      ><span
+        >Local processing. Open source.
+        <a href="https://github.com/varunmenon0/SteadyFrame/blob/main/LICENSE"
+          >MIT license</a
+        ></span
+      >
+    </footer>
+  </body>
+</html>
